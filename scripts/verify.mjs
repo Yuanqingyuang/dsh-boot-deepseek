@@ -493,6 +493,22 @@ async function main() {
             centered: Math.round((left + right) / 2),
             overlap: boxes.some((box, index) => index > 0 && box.x < boxes[index - 1].x + boxes[index - 1].width),
             font: getComputedStyle(glyphs[0]).fontFamily,
+            // document.fonts.check() is NOT a test for "did my @font-face take":
+            // it answers "is anything still loading for this text", so an
+            // unknown family (rendered by the system fallback) reports true.
+            // These two do answer it: is a face registered at all, and did the
+            // shadow stylesheet keep the rule as a font-face rule.
+            fontFaces: Array.from(document.fonts)
+              .map((face) => face.family + '/' + String(face.weight) + '/' + face.status)
+              .filter((row) => row.toLowerCase().includes('orbitron')),
+            fontFaceRules: (() => {
+              try {
+                const sheet = shadow.querySelector('style').sheet;
+                return Array.from(sheet.cssRules).filter((rule) => rule.constructor.name === 'CSSFontFaceRule').length;
+              } catch (error) {
+                return 'blocked: ' + String(error);
+              }
+            })(),
             fill: getComputedStyle(glyphs[0]).fill,
             stroke: getComputedStyle(glyphs[0]).stroke,
             dashoffset: getComputedStyle(glyphs[0]).strokeDashoffset,

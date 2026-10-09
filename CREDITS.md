@@ -31,3 +31,7 @@
 - `lib/media/intro.mp4` 是 **Steam 创意工坊**作品《4K120FPS-DeepSeek专业工作模式》的副本，
   版权归其作者，**不属于本仓库的 MIT 许可范围**；本仓库只是个人定制的留档。
 - `docs/preview-*.png` 由本分支自己的构建产物截取（DeepSeek 字标 / DSH 文案），不是上游原稿的截图。
+- `assets/orbitron-latin.woff2` 是 **Orbitron** 字体（Copyright 2018 The Orbitron Project Authors，
+  SIL Open Font License 1.1，全文见同目录 `orbitron-OFL.txt`）。开场字标用它排版；构建时以 data: URL
+  内联进客户端 bundle（由 `lib/client.js` 在文档级注册），因此**不在本仓库的 MIT 许可范围内**，
+  随附 OFL 全文。

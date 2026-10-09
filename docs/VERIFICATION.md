@@ -69,7 +69,9 @@ node scripts/verify.mjs --url '…' --mode full  --at 3000 --skip       # 跳过
 
 | 项 | 证据 |
 |---|---|
-| 字标几何 | `verify.mjs` 的 `wordmark` 探针：`count=8`、`text="DeepSeek"`、`centered=400`（800 视口正中）、`overlap=false`、`caption="DEEPSEEK SYSTEM BOOT"` |
+| 字标几何 | `verify.mjs` 的 `wordmark` 探针：`count=8`、`text="DeepSeek"`、`centered=520`（1040 视口正中）、`overlap=false`、`caption="DEEPSEEK SYSTEM BOOT"` |
+| 字体真的换了 | 同一探针的 `fontFaces`：`Orbitron/400 900/loaded`。换上 Orbitron 后墨迹总宽从 773 变成 **918**（用户单位），原来的 800 视口装不下，因此 viewBox 放宽到 `0 0 1040 230`，居中基准改为从 SVG 的 `viewBox.baseVal` 读取而不是写死 |
+| 影子根 @font-face 无效 | 反面证据：`@font-face` 放在影子样式表里时，该表有 1 条 `CSSFontFaceRule`，而 `document.fonts` 里**没有任何** Orbitron 字面 —— 字标静默回退到系统无衬线体（截图与未内联时逐字节相同，同 hash）。字体字面是文档作用域的，故改由 `src/client.js` 的 `ensureFontSheet()` 注入文档级样式表 |
 | 开场书写 | `simple --settle 500` 截图：`Deep` 已填满，`p` 只画出轮廓、`S` 刚画一半 —— 轮廓先行、填充随后，与参考页一致 |
 | 开场定格 | `simple --settle 1200 --at 1400` 截图：字标整体蓝色 + 辉光，tagline「探索未至之境」与底部字幕各就各位 |
 | 全片文案 | 产物里 `[DSH]` 43 处、`[DSH-INFER]` 12 处、HUD `◢ DSH // UAV-BS-07`、`CA_DSH_ROOT`、`DSH-CTRL` 各 1 处；区分大小写搜 `550C` 只剩 4 处，全是标识符与生成横幅（`CSS_550C` ×2、`assets/550C-source.html` 出处 ×2） |

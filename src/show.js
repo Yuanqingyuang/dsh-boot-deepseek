@@ -109,7 +109,7 @@ function playBoot(){
 
   const bootStage = stage.querySelector('.boot-stage');
   const totalMs = 2300;
-  later(() => { if (bootStage !== null) bootStage.classList.add('writing'); }, 120);
+  later(() => { layoutWordmark(); if (bootStage !== null) bootStage.classList.add('writing'); }, 120);
   later(() => bootText.classList.add('show'), 1400);
   later(() => logo.classList.add('finished'), totalMs);
   return totalMs;
@@ -583,18 +583,22 @@ const FINALE_MAX_MS = 9000;
 
 /**
  * 把 data-w 的字形按真实字宽排成一行并居中。
- * 用 ink box 而不是 advance width，所以换任何字体都不会撞字或留缝。
+ * 用 ink box 而不是 advance width，所以换任何字体都不会撞字或留缝；
+ * 居中基准取自 SVG 自己的 viewBox（宽字体下这个盒子被放宽过），不写死数字。
  */
 function layoutWordmark(){
+  const logoEl = stage.querySelector("#logo");
   const glyphs = Array.from(stage.querySelectorAll("#logo [data-w]"));
-  if (glyphs.length === 0) return;
+  if (logoEl === null || glyphs.length === 0) return;
+  const svg = logoEl.ownerSVGElement;
+  const box = svg === null || svg.viewBox === undefined ? 800 : svg.viewBox.baseVal.width;
   const gap = 18;
   const boxes = glyphs.map(el => {
-    const box = el.getBBox();
-    return { el: el, x: box.x, w: box.width };
+    const bb = el.getBBox();
+    return { el: el, x: bb.x, w: bb.width };
   });
   const total = boxes.reduce((sum, item) => sum + item.w, 0) + gap * (boxes.length - 1);
-  let cursor = (800 - total) / 2;
+  let cursor = (box - total) / 2;
   for (const item of boxes){
     const current = Number(item.el.getAttribute("x")) || 0;
     item.el.setAttribute("x", String(current + (cursor - item.x)));

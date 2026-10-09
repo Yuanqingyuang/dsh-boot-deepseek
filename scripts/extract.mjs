@@ -23,6 +23,28 @@ const root = resolve(here, '..')
 const sourcePath = process.argv[2] ?? resolve(root, 'assets/550C-source.html')
 const html = readFileSync(sourcePath, 'utf8')
 
+// The wordmark's typeface travels WITH the bundle. The reference opening sets
+// "DeepSeek" in Orbitron; the splash has to run offline, and a data: URL costs
+// one @font-face rule instead of a host route (which would need its own restart
+// to appear). The static asset is the build input; OFL 1.1, see
+// assets/orbitron-OFL.txt.
+const ORBITRON_WOFF2 = readFileSync(resolve(root, 'assets/orbitron-latin.woff2')).toString('base64')
+
+/**
+ * The @font-face rule, kept OUT of the shadow-root sheet on purpose.
+ *
+ * Chromium PARSES an @font-face declared inside a shadow root's stylesheet but
+ * never registers the face: measured on the built bundle, the shadow sheet held
+ * one CSSFontFaceRule while `document.fonts` listed no Orbitron face at all — so
+ * the wordmark silently rendered in the system fallback and the first attempt at
+ * this shipped a font that did nothing. Font faces are document-scoped, so the
+ * rule is injected at document level instead: see FONT_FACE_CSS below and
+ * ensureFontSheet() in src/client.js.
+ */
+const fontFaceCss =
+  '@font-face{font-family:"Orbitron";font-style:normal;font-weight:400 900;font-display:block;' +
+  `src:url(data:font/woff2;base64,${ORBITRON_WOFF2}) format("woff2");}`
+
 /** Slice one `<div …>` element out of the page by counting nested div tags. */
 function sliceElement(source, startMarker) {
   const start = source.indexOf(startMarker)
@@ -77,6 +99,10 @@ must(!/(^|\n)\s*(html|body)\b/.test(css), 'stylesheet still targets html/body')
 //     aura. The dash length is the reference's ratio (600 at font-size 76 ≈
 //     8 × font-size) so the draw takes the same share of its 0.48 s here.
 const EXTRA_CSS = `
+  /* The wordmark's typeface is deliberately NOT declared here: @font-face inside
+     a shadow root is parsed but never registered (see fontFaceCss above). It is
+     injected document-level by src/client.js instead. */
+
   /* ===== 开头：DeepSeek 字标的自我书写（描边 → 填充 → 辉光）===== */
   .boot-stage{flex-direction:column;}
   .boot-aura{position:absolute;left:50%;top:50%;width:64vw;height:44vh;max-width:48rem;transform:translate(-50%,-50%);border-radius:9999px;background:#3b82f6;opacity:.12;filter:blur(120px);pointer-events:none;}
@@ -148,6 +174,13 @@ must(bootMarkup.includes('<svg '), 'the boot markup has no <svg to decorate')
 bootMarkup = bootMarkup.replace('<svg ', '<div class="boot-aura" aria-hidden="true"></div>\n    <svg ')
 bootMarkup = bootMarkup.replace('    </svg>\n', '    </svg>\n    <p id="tagline">探索未至之境</p>\n')
 must(bootMarkup.includes('id="tagline"'), 'the tagline did not land in the boot markup')
+// Orbitron is a wide geometric face: the same 8 letters measure 918 user units
+// where the system sans measured 773, so the original 800-wide viewBox would let
+// the row spill past the canvas (and off a narrow window). Widen the box instead
+// of shrinking the type — the mark then sits at ~88 % of its viewBox, close to
+// the reference page's own proportion.
+must(bootMarkup.includes('viewBox="0 0 800 230"'), 'the boot svg viewBox changed upstream')
+bootMarkup = bootMarkup.replace('viewBox="0 0 800 230"', 'viewBox="0 0 1040 230"')
 
 // ── script ──────────────────────────────────────────────────────────────────
 const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/)
@@ -257,7 +290,7 @@ js = js.replace(
 
   const bootStage = stage.querySelector('.boot-stage');
   const totalMs = 2300;
-  later(() => { if (bootStage !== null) bootStage.classList.add('writing'); }, 120);
+  later(() => { layoutWordmark(); if (bootStage !== null) bootStage.classList.add('writing'); }, 120);
   later(() => bootText.classList.add('show'), 1400);
   later(() => logo.classList.add('finished'), totalMs);
   return totalMs;`,
@@ -319,18 +352,22 @@ const FINALE_MAX_MS = 9000;
 
 /**
  * 把 data-w 的字形按真实字宽排成一行并居中。
- * 用 ink box 而不是 advance width，所以换任何字体都不会撞字或留缝。
+ * 用 ink box 而不是 advance width，所以换任何字体都不会撞字或留缝；
+ * 居中基准取自 SVG 自己的 viewBox（宽字体下这个盒子被放宽过），不写死数字。
  */
 function layoutWordmark(){
+  const logoEl = stage.querySelector("#logo");
   const glyphs = Array.from(stage.querySelectorAll("#logo [data-w]"));
-  if (glyphs.length === 0) return;
+  if (logoEl === null || glyphs.length === 0) return;
+  const svg = logoEl.ownerSVGElement;
+  const box = svg === null || svg.viewBox === undefined ? 800 : svg.viewBox.baseVal.width;
   const gap = 18;
   const boxes = glyphs.map(el => {
-    const box = el.getBBox();
-    return { el: el, x: box.x, w: box.width };
+    const bb = el.getBBox();
+    return { el: el, x: bb.x, w: bb.width };
   });
   const total = boxes.reduce((sum, item) => sum + item.w, 0) + gap * (boxes.length - 1);
-  let cursor = (800 - total) / 2;
+  let cursor = (box - total) / 2;
   for (const item of boxes){
     const current = Number(item.el.getAttribute("x")) || 0;
     item.el.setAttribute("x", String(current + (cursor - item.x)));
@@ -494,6 +531,7 @@ const banner = (name, note) =>
 
 const assetsOut =
   banner('assets', 'stylesheet + markup extracted from the original page') +
+  `const FONT_FACE_CSS = ${JSON.stringify(fontFaceCss)};\n\n` +
   `const CSS_550C = ${JSON.stringify(css)};\n\n` +
   `const BOOT_MARKUP = ${JSON.stringify(bootMarkup)};\n\n` +
   `const APP_MARKUP = ${JSON.stringify(appMarkupRebranded)};\n`

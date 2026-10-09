@@ -22,7 +22,8 @@
 > - **开头换成「自我书写」**（移植自参考页 `index-scifi-futuristic`）：每个字母的**轮廓自己画出来**
 >   （`stroke-dashoffset` 归零），填充在 0.12 s 后追上来并带蓝色辉光，8 个字母每 0.10 s 一个；
 >   字标整体品牌蓝 `#3b82f6`，下方是 HUD 铭牌样式的「探索未至之境」，背后一层低饱和蓝色雾霭。
->   字幕仍是 `DEEPSEEK SYSTEM BOOT`。
+>   字幕仍是 `DEEPSEEK SYSTEM BOOT`。字标用 **Orbitron**（OFL 1.1，构建时内联进 bundle，
+>   许可全文见 `assets/orbitron-OFL.txt`），字形与参考页一致。
 > - 片内**所有 `550C` 文案改为 `DSH`**：终端说话人标签、HUD 品牌、固件清单里的 `CA_DSH_ROOT`、
 >   操作者提示等共 77 处，写在 `scripts/extract.mjs` 的第 13 条定点改写里（带数量断言）。
 > - **完整档**在 `SYSTEM IS REWRITTEN` 之后追加播放 `lib/media/intro.mp4`（DeepSeek 赛博片头，
