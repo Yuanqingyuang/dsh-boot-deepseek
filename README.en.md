@@ -44,8 +44,8 @@ Settings → General → **DeepSeek 开机动画**. A **Preview** button replays
 
 | Mode | Length | Content |
 |---|---|---|
-| **Simple** (default) | ~4 s | the DeepSeek wordmark drawn letter by letter |
-| **Full** | ~19.5 s | wordmark → base station takeover → 47 nodes rewritten one by one → `SYSTEM IS REWRITTEN` → closing video |
+| **Simple** (default) | ~3 s | the DeepSeek wordmark writes its own outlines, then fills |
+| **Full** | ~18 s | wordmark → base station takeover → 47 nodes rewritten one by one → `SYSTEM IS REWRITTEN` → closing video |
 | **Off** | — | nothing is painted at all |
 
 Palettes: **amber** (default, the original CRT palette — not a single token is overridden), green (P1),

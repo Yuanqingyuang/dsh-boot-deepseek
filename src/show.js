@@ -105,38 +105,14 @@ let booting = false, launched = false;
 function playBoot(){
   const logo = stage.querySelector('#logo');
   const bootText = stage.querySelector('#bootText');
-  const paths = Array.from(logo.querySelectorAll('[data-w]'));
   layoutWordmark();
 
-  paths.forEach(p => {
-    p.style.opacity = '0.08';
-    p.style.clipPath = 'inset(0 0 0 0)';
-    p.style.webkitClipPath = 'inset(0 0 0 0)';
-  });
-
-  const sorted = paths.map(p => ({el: p, x: p.getBBox().x})).sort((a, b) => a.x - b.x);
-
-  sorted.forEach((item, i) => {
-    const delay = 250 + i * 300;
-    later(() => {
-      const p = item.el;
-      p.style.clipPath = 'inset(0 100% 0 0)';
-      p.style.webkitClipPath = 'inset(0 100% 0 0)';
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          p.style.transition = 'clip-path .6s cubic-bezier(.4,0,.2,1), opacity .35s ease';
-          p.style.opacity = '1';
-          p.style.clipPath = 'inset(0 0 0 0)';
-          p.style.webkitClipPath = 'inset(0 0 0 0)';
-        });
-      });
-    }, delay);
-  });
-
-  later(() => bootText.classList.add('show'), 2400);
-  const totalMs = 250 + sorted.length * 300 + 400;
+  const bootStage = stage.querySelector('.boot-stage');
+  const totalMs = 2300;
+  later(() => { if (bootStage !== null) bootStage.classList.add('writing'); }, 120);
+  later(() => bootText.classList.add('show'), 1400);
   later(() => logo.classList.add('finished'), totalMs);
-  return totalMs + 600;
+  return totalMs;
 }
 
 /* ===== 主终端日志 ===== */

@@ -252,8 +252,10 @@ async function main() {
 
     await cdp.send('Page.reload', { ignoreCache: true })
     // A timeline run has to start sampling before the shell boots, or the boot
-    // card is already gone by the first sample.
-    await sleep(args.timeline === true ? 150 : 1200)
+    // card is already gone by the first sample. `--settle` shortens the same
+    // window for the cases where the subject IS the opening: the splash mounts
+    // within a few hundred ms, so the default 1200 ms is already past it.
+    await sleep(args.timeline === true ? 150 : Number(typeof args.settle === 'string' ? args.settle : 1200))
     const dismissedAfterReload = await dismissGates()
     await sleep(at)
 
@@ -491,7 +493,9 @@ async function main() {
             centered: Math.round((left + right) / 2),
             overlap: boxes.some((box, index) => index > 0 && box.x < boxes[index - 1].x + boxes[index - 1].width),
             font: getComputedStyle(glyphs[0]).fontFamily,
-            accent: glyphs.filter((el) => getComputedStyle(el).fill === 'rgb(77, 107, 254)').map((el) => el.textContent).join(''),
+            fill: getComputedStyle(glyphs[0]).fill,
+            stroke: getComputedStyle(glyphs[0]).stroke,
+            dashoffset: getComputedStyle(glyphs[0]).strokeDashoffset,
             caption: textOf('#bootText'),
           };
         })(),

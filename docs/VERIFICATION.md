@@ -69,8 +69,9 @@ node scripts/verify.mjs --url '…' --mode full  --at 3000 --skip       # 跳过
 
 | 项 | 证据 |
 |---|---|
-| 字标几何 | `verify.mjs` 的 `wordmark` 探针：`count=8`、`text="DeepSeek"`、`centered=400`（800 视口正中）、`overlap=false`、强调色落在 `D` 与 `S`、`caption="DEEPSEEK SYSTEM BOOT"` |
-| 书写过程 | `simple @1400ms` 截图：最后一个 `k` 正在被 clip-path 写出，前七个已完成 |
+| 字标几何 | `verify.mjs` 的 `wordmark` 探针：`count=8`、`text="DeepSeek"`、`centered=400`（800 视口正中）、`overlap=false`、`caption="DEEPSEEK SYSTEM BOOT"` |
+| 开场书写 | `simple --settle 500` 截图：`Deep` 已填满，`p` 只画出轮廓、`S` 刚画一半 —— 轮廓先行、填充随后，与参考页一致 |
+| 开场定格 | `simple --settle 1200 --at 1400` 截图：字标整体蓝色 + 辉光，tagline「探索未至之境」与底部字幕各就各位 |
 | 全片文案 | 产物里 `[DSH]` 43 处、`[DSH-INFER]` 12 处、HUD `◢ DSH // UAV-BS-07`、`CA_DSH_ROOT`、`DSH-CTRL` 各 1 处；区分大小写搜 `550C` 只剩 4 处，全是标识符与生成横幅（`CSS_550C` ×2、`assets/550C-source.html` 出处 ×2） |
 | 完整链路 | `full --timeline` 采样表：10.5s `#final` 亮起 → **11.4s 视频开播**（`paused=false ready=4 3840x2160 err=null`）→ 18.9s `t=7.05` 自然播完 → 19.7s 遮罩卸载 |
 | 结尾画面 | `--finale-shot` 在轮询中发现视频确实在播时自动抓帧（`.verify/shots/finale-live.png`），确认 `object-fit:cover` 铺满 |

@@ -65,16 +65,36 @@ for (const [pattern, replacement] of cssRewrites) {
 }
 must(!/(^|\n)\s*(html|body)\b/.test(css), 'stylesheet still targets html/body')
 
-// 10. DeepSeek additions to that same sheet: the wordmark's type and accent
-//     colour, and the full-frame stage the finale video plays on. Appended —
-//     never merged into the rules above — so the original stylesheet stays
+// 10. DeepSeek additions to that same sheet: the opening's self-writing wordmark
+//     and the full-frame stage the finale video plays on. Appended — never
+//     merged into the rules above — so the original stylesheet stays
 //     byte-identical and a re-extract cannot drift.
+//
+//     The opening is ported from the reference page `index-scifi-futuristic`:
+//     every glyph draws its own OUTLINE (stroke-dashoffset → 0) and the fill
+//     catches up 0.12 s later with a growing blue drop-shadow, one letter every
+//     0.10 s; a steel-blue tagline fades in after, over a low-saturation blue
+//     aura. The dash length is the reference's ratio (600 at font-size 76 ≈
+//     8 × font-size) so the draw takes the same share of its 0.48 s here.
 const EXTRA_CSS = `
-  /* ===== DeepSeek 字标（替换原厂字标）===== */
-  #logo text{font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Noto Sans SC","Microsoft YaHei",sans-serif;font-size:138px;font-weight:700;letter-spacing:0;}
-  .blue{fill:#4d6bfe;stroke:none;}
-  #logo.finished .blue{animation:glowB 2.6s ease-in-out infinite;}
-  @keyframes glowB{0%,100%{filter:drop-shadow(0 0 8px rgba(77,107,254,.65));}50%{filter:drop-shadow(0 0 20px rgba(77,107,254,1));}}
+  /* ===== 开头：DeepSeek 字标的自我书写（描边 → 填充 → 辉光）===== */
+  .boot-stage{flex-direction:column;}
+  .boot-aura{position:absolute;left:50%;top:50%;width:64vw;height:44vh;max-width:48rem;transform:translate(-50%,-50%);border-radius:9999px;background:#3b82f6;opacity:.12;filter:blur(120px);pointer-events:none;}
+  #logo text{font-family:"Orbitron","Exo 2","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Noto Sans SC","Microsoft YaHei",sans-serif;font-size:138px;font-weight:700;letter-spacing:0;}
+  .glyph{fill:#3b82f6;stroke:#3b82f6;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill;stroke-dasharray:1100;stroke-dashoffset:1100;fill-opacity:0;}
+  .boot-stage.writing .glyph{animation:draw-outline .48s cubic-bezier(.22,.61,.36,1) forwards,fill-letter .34s cubic-bezier(.22,.61,.36,1) .12s forwards;}
+  .boot-stage.writing .glyph-2{animation-delay:.10s,.22s;}
+  .boot-stage.writing .glyph-3{animation-delay:.20s,.32s;}
+  .boot-stage.writing .glyph-4{animation-delay:.30s,.42s;}
+  .boot-stage.writing .glyph-5{animation-delay:.40s,.52s;}
+  .boot-stage.writing .glyph-6{animation-delay:.50s,.62s;}
+  .boot-stage.writing .glyph-7{animation-delay:.60s,.72s;}
+  .boot-stage.writing .glyph-8{animation-delay:.70s,.82s;}
+  @keyframes draw-outline{from{stroke-dashoffset:1100;}to{stroke-dashoffset:0;}}
+  @keyframes fill-letter{0%{fill-opacity:.03;filter:drop-shadow(0 0 0 rgba(59,130,246,0));}55%{fill-opacity:.76;filter:drop-shadow(0 0 10px rgba(59,130,246,.45));}100%{fill-opacity:1;filter:drop-shadow(0 0 5px rgba(59,130,246,.35));}}
+  @keyframes fade-in-up{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  #tagline{margin-top:clamp(22px,3.2vh,34px);padding-left:.4em;color:transparent;background:linear-gradient(180deg,#aab6c6 0%,#8b9aaf 52%,#748399 100%);-webkit-background-clip:text;background-clip:text;font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;font-size:clamp(12px,1.45vw,15px);font-weight:500;line-height:1.6;letter-spacing:.4em;white-space:nowrap;opacity:0;}
+  .boot-stage.writing #tagline{animation:fade-in-up .8s cubic-bezier(.22,.61,.36,1) 1.35s forwards;}
 
   /* ===== 结尾视频（SYSTEM IS REWRITTEN 之后）===== */
   .finale{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:#000;opacity:0;transition:opacity .5s ease;pointer-events:none;}
@@ -83,6 +103,7 @@ const EXTRA_CSS = `
 `
 css += EXTRA_CSS
 must(css.includes('.finale-video'), 'the finale stylesheet did not land in the bundle')
+must(css.includes('.boot-stage.writing .glyph'), 'the opening stylesheet did not land in the bundle')
 
 // ── markup ──────────────────────────────────────────────────────────────────
 const appMarkup = sliceElement(html, '<div id="app">')
@@ -99,16 +120,16 @@ const finalMarkup = sliceElement(html, '<div id="final">')
 //    tagged `data-w` — and src/show.js lays the row out from the real glyph
 //    boxes before the wipe starts, so it stays centred on whatever font the
 //    machine resolves instead of depending on metrics this script cannot know.
-//    The two capitals carry the accent colour the red 0 used to: D and S in
-//    brand colour, the rest white, all of them glowing once the mark is finished.
+//    Each glyph carries `data-w` (the layout pass needs it) and a per-letter
+//    class: the opening is a self-writing outline now, so the letters are
+//    sequenced by the stylesheet instead of by JavaScript.
 const WORDMARK_TEXT = 'DeepSeek'
-const WORDMARK_ACCENTS = 'DS'
 const wordmarkMarkup =
-  '<g id="logo" filter="url(#despike)">\n' +
+  '<g id="logo">\n' +
   Array.from(WORDMARK_TEXT)
     .map(
       (glyph, index) =>
-        `        <text class="${WORDMARK_ACCENTS.includes(glyph) ? 'blue' : 'white'}" data-w="${String(index)}" x="0" y="162">${glyph}</text>`,
+        `        <text class="glyph glyph-${String(index + 1)}" data-w="${String(index)}" x="0" y="162">${glyph}</text>`,
     )
     .join('\n') +
   '\n      </g>'
@@ -121,6 +142,12 @@ bootMarkup = bootMarkup.slice(0, logoOpen) + wordmarkMarkup + bootMarkup.slice(l
 must(bootMarkup.includes('data-w="0"'), 'the DeepSeek wordmark did not land in the markup')
 must(bootMarkup.includes('550C SYSTEM BOOT'), 'the boot caption was not found')
 bootMarkup = bootMarkup.replace('550C SYSTEM BOOT', 'DEEPSEEK SYSTEM BOOT')
+// Two more pieces of the reference opening: an ambient blue aura behind the mark
+// and its tagline underneath. Both are inert without the stylesheet above.
+must(bootMarkup.includes('<svg '), 'the boot markup has no <svg to decorate')
+bootMarkup = bootMarkup.replace('<svg ', '<div class="boot-aura" aria-hidden="true"></div>\n    <svg ')
+bootMarkup = bootMarkup.replace('    </svg>\n', '    </svg>\n    <p id="tagline">探索未至之境</p>\n')
+must(bootMarkup.includes('id="tagline"'), 'the tagline did not land in the boot markup')
 
 // ── script ──────────────────────────────────────────────────────────────────
 const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/)
@@ -188,15 +215,56 @@ must(!/#hint/.test(js), '#hint reference survived the rewrite')
 // 8. `#final` and the phase machine stay exactly as written, except for the two
 //    DeepSeek rewrites below.
 
-// 11. playBoot selects the logotype. The 550C mark is <path> elements; the
-//     DeepSeek wordmark is <text> nodes, so the selector follows the markup —
-//     and the row is laid out (centred, from real glyph boxes) before the
-//     x-order sort runs, since that sort decides the writing order.
+// 11. playBoot becomes a stylesheet-driven opening. The 550C mark walked seven
+//     <path> elements and wiped each one in with an inline clip-path; the
+//     reference opening writes glyph OUTLINES instead, which is a CSS animation
+//     on the letters themselves — so JavaScript only lays the row out (centred,
+//     from real glyph boxes) and keeps the two beats the page had: the caption,
+//     and the "finished" mark. One class on the stage starts the cascade.
 js = js.replace(
-  "const paths = Array.from(logo.querySelectorAll('path'));",
-  "const paths = Array.from(logo.querySelectorAll('[data-w]'));\n  layoutWordmark();",
+  `  const paths = Array.from(logo.querySelectorAll('path'));
+
+  paths.forEach(p => {
+    p.style.opacity = '0.08';
+    p.style.clipPath = 'inset(0 0 0 0)';
+    p.style.webkitClipPath = 'inset(0 0 0 0)';
+  });
+
+  const sorted = paths.map(p => ({el: p, x: p.getBBox().x})).sort((a, b) => a.x - b.x);
+
+  sorted.forEach((item, i) => {
+    const delay = 250 + i * 300;
+    later(() => {
+      const p = item.el;
+      p.style.clipPath = 'inset(0 100% 0 0)';
+      p.style.webkitClipPath = 'inset(0 100% 0 0)';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          p.style.transition = 'clip-path .6s cubic-bezier(.4,0,.2,1), opacity .35s ease';
+          p.style.opacity = '1';
+          p.style.clipPath = 'inset(0 0 0 0)';
+          p.style.webkitClipPath = 'inset(0 0 0 0)';
+        });
+      });
+    }, delay);
+  });
+
+  later(() => bootText.classList.add('show'), 2400);
+  const totalMs = 250 + sorted.length * 300 + 400;
+  later(() => logo.classList.add('finished'), totalMs);
+  return totalMs + 600;`,
+  `  layoutWordmark();
+
+  const bootStage = stage.querySelector('.boot-stage');
+  const totalMs = 2300;
+  later(() => { if (bootStage !== null) bootStage.classList.add('writing'); }, 120);
+  later(() => bootText.classList.add('show'), 1400);
+  later(() => logo.classList.add('finished'), totalMs);
+  return totalMs;`,
 )
-must(js.includes("querySelectorAll('[data-w]')"), 'playBoot still selects the 550C paths')
+must(js.includes('layoutWordmark();'), 'playBoot no longer lays the wordmark out')
+must(js.includes("classList.add('writing')"), 'playBoot no longer starts the writing animation')
+must(!js.includes("querySelectorAll('path')"), 'playBoot still walks the 550C paths')
 
 // 12. The finale. SYSTEM IS REWRITTEN keeps its beat, and then the user's
 //     DeepSeek intro plays full-frame; the run ends when the video does. The
