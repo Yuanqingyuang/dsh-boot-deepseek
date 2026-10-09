@@ -16,6 +16,7 @@
     "README.md",
     "README.en.md",
     "CHANGELOG.md",
+    "CREDITS.md",
     "LICENSE"
   ],
   "license": "MIT",
@@ -32,11 +33,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yannicksong0106/dsh-550c-boot.git"
+    "url": "git+https://github.com/Yuanqingyuang/dsh-boot-deepseek.git"
   },
-  "homepage": "https://github.com/yannicksong0106/dsh-550c-boot#readme",
+  "homepage": "https://github.com/Yuanqingyuang/dsh-boot-deepseek#readme",
   "bugs": {
-    "url": "https://github.com/yannicksong0106/dsh-550c-boot/issues"
+    "url": "https://github.com/Yuanqingyuang/dsh-boot-deepseek/issues"
   },
   "publishConfig": {
     "access": "public"

@@ -1,15 +1,11 @@
-# dsh-550c-boot
+# dsh-boot-deepseek
 
 [中文](README.md) | [English](README.en.md)
 
-[![Stars](https://img.shields.io/github/stars/yannicksong0106/dsh-550c-boot?style=flat-square&logo=github&label=Stars)](https://github.com/yannicksong0106/dsh-550c-boot/stargazers)
-[![npm](https://img.shields.io/npm/v/dsh-550c-boot?style=flat-square&logo=npm&label=npm)](https://www.npmjs.com/package/dsh-550c-boot)
-[![npm downloads](https://img.shields.io/npm/dm/dsh-550c-boot?style=flat-square&label=npm%20downloads)](https://www.npmjs.com/package/dsh-550c-boot)
-[![Downloads](https://img.shields.io/github/downloads/yannicksong0106/dsh-550c-boot/total?style=flat-square&label=Downloads)](https://github.com/yannicksong0106/dsh-550c-boot/releases)
-[![Last commit](https://img.shields.io/github/last-commit/yannicksong0106/dsh-550c-boot?style=flat-square)](https://github.com/yannicksong0106/dsh-550c-boot/commits/main)
-[![License](https://img.shields.io/github/license/yannicksong0106/dsh-550c-boot?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/github/license/Yuanqingyuang/dsh-boot-deepseek?style=flat-square)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/Yuanqingyuang/dsh-boot-deepseek?style=flat-square&logo=github&label=Stars)](https://github.com/Yuanqingyuang/dsh-boot-deepseek/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/Yuanqingyuang/dsh-boot-deepseek?style=flat-square)](https://github.com/Yuanqingyuang/dsh-boot-deepseek/commits/main)
 [![Topic](https://img.shields.io/badge/topic-dsh--plugin-blue?style=flat-square)](https://github.com/topics/dsh-plugin)
-[![Visitors](https://visitor-badge.laobi.icu/badge?page_id=yannicksong0106.dsh-550c-boot)](https://github.com/yannicksong0106/dsh-550c-boot)
 
 **给 DeepSeek Harness（DSH）加一段 DSH 开机片头。**
 每次启动客户端全屏播放，播完渐出，露出真正的界面。*Full-screen DSH boot intro for DeepSeek Harness.*
@@ -17,7 +13,11 @@
 动画与 HTML 原稿由 **Voidpocket**（[@Voidpoket](https://github.com/Voidpocket)）提供，插件工程与移植由
 **Ziyang Song**（[@yannicksong0106](https://github.com/yannicksong0106)）完成。详见 [CREDITS.md](CREDITS.md)。
 
-> **本机定制版（fork，非上游原版）**
+> **本仓库是 [yannicksong0106/dsh-550c-boot](https://github.com/yannicksong0106/dsh-550c-boot) 的定制分支（fork）。**
+> 上游的插件工程、动画移植、文档与验证脚手架全部保留并按其原样署名；本分支只改品牌与片尾。
+> 包名仍叫 `dsh-550c-boot`——它同时是 localStorage 键、路由前缀与插件入口 id，改名会破坏已装好的 profile。
+
+> **本分支改了什么**
 >
 > - 开头的字标书写换成 **DeepSeek 字标**，沿用上游那套逐笔书写机制（按 x 排序 → 逐元素 clip-path
 >   从左往右写 → 完成后辉光）；`D` 与 `S` 两个大写字母取品牌蓝 `#4d6bfe`，其余白色；

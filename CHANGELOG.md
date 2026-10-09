@@ -2,6 +2,32 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)；版本号用 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.4.0-deepseek.1] - 2026-10-09
+
+本分支（**fork**，见 [CREDITS.md](CREDITS.md)）的第一版：只改品牌与片尾，上游的动画、工程、文档与
+验证脚手架全部保留。
+
+### 变更
+
+- **开头字标换成 DeepSeek 字标**：沿用上游那套逐笔书写机制（按 x 排序 → 逐元素 clip-path 从左往右写
+  → 完成后辉光），`D` 与 `S` 两个大写字母取品牌蓝 `#4d6bfe`；字幕改为 `DEEPSEEK SYSTEM BOOT`。
+- **片内所有 `550C` 文案改为 `DSH`**（77 处）：终端说话人标签、HUD 品牌、固件清单里的 `CA_DSH_ROOT`、
+  操作者提示等。标识符一律不动（`CSS_550C`、localStorage 键、路由前缀、插件入口 id）——它们不是界面文字。
+- 版本号故意高于上游的 `0.3.3`，避免设置里的「检查更新 → 立即更新」把定制覆盖回上游原版。
+
+### 新增
+
+- **完整档片尾视频**：`SYSTEM IS REWRITTEN` 之后全屏播放 `lib/media/intro.mp4`
+  （3840×2160 / 7.05 s / H.264+AAC，静音自动播放），由宿主半边经同源路由
+  `/dsh-550c-boot/media/intro.mp4` 送出（支持 Range）。媒体出错、自动播放被拒或超时都会收场，
+  视频播放中途按 Esc 也能干净取消。
+
+### 修复
+
+- **媒体缓存导致换片不生效**：原来只在 `mediaCache === null` 时读一次文件，换素材必须再次重启 DSH
+  才生效（实测：重启后路由已上线、磁盘上已是新片，`content-length` 却仍是旧片的字节数）。
+  改为按 size+mtime 作缓存键，换素材不再需要重启。
+
 ## [0.3.3] - 2026-10-01
 
 ### 变更

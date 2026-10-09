@@ -1,9 +1,15 @@
-# dsh-550c-boot
+# dsh-boot-deepseek
 
 [English](README.en.md) | [中文](README.md)
 
-**A full-screen 550C boot intro for DeepSeek Harness (DSH).**
+**A full-screen DSH boot intro for DeepSeek Harness (DSH).**
 It plays on every client start, fades out when it finishes, and reveals the real UI.
+
+> **This repository is a fork of [yannicksong0106/dsh-550c-boot](https://github.com/yannicksong0106/dsh-550c-boot).**
+> The upstream plugin engineering, the animation port, the docs and the verification scaffolding are all kept
+> and credited as they were; this branch only changes the branding and adds a closing video.
+> The package is still named `dsh-550c-boot` — it doubles as the localStorage key, the route prefix and the
+> plugin entry id, so renaming it would break an already-installed profile.
 
 ![Full mode: 47 nodes rewritten one by one](docs/preview-full.png)
 
@@ -17,12 +23,16 @@ It plays on every client start, fades out when it finishes, and reveals the real
 ## Install
 
 ```sh
-# from GitHub (recommended; build output is committed, no install-time scripts)
-dsh plugin --profile web add github:yannicksong0106/dsh-550c-boot
+# from this repository (build output is committed, no install-time scripts)
+dsh plugin --profile <profile> add github:Yuanqingyuang/dsh-boot-deepseek
 
-# or the prebuilt tarball (release asset; the asset name is version-free, so `latest` never rots)
-dsh plugin --profile web add https://github.com/yannicksong0106/dsh-550c-boot/releases/latest/download/dsh-550c-boot.tgz
+# or from a local directory
+dsh plugin --profile <profile> add <absolute path to this directory>
 ```
+
+> The **desktop client** (`desktop` profile) is managed exclusively by the Electron app, and `dsh plugin`
+> refuses that profile outright: install from **Settings → Plugins**, or use the local-directory form above
+> and restart the client.
 
 **Restart DSH once** after installing (bundles are assembled at startup). After an upgrade, hard-refresh
 with **Ctrl+Shift+R** — DSH serves client bundles with `max-age=31536000, immutable` while the `rev` in the
@@ -30,12 +40,12 @@ URL is a process nonce, so a plain F5 keeps the first copy it ever fetched.
 
 ## Usage
 
-Settings → General → **550C 开机动画**. A **Preview** button replays it immediately.
+Settings → General → **DeepSeek 开机动画**. A **Preview** button replays it immediately.
 
 | Mode | Length | Content |
 |---|---|---|
-| **Simple** (default) | ~4 s | the 550C logo drawn stroke by stroke |
-| **Full** | ~16 s | logo → base station takeover → 47 nodes rewritten one by one → `SYSTEM IS REWRITTEN` |
+| **Simple** (default) | ~4 s | the DeepSeek wordmark drawn letter by letter |
+| **Full** | ~19.5 s | wordmark → base station takeover → 47 nodes rewritten one by one → `SYSTEM IS REWRITTEN` → closing video |
 | **Off** | — | nothing is painted at all |
 
 Palettes: **amber** (default, the original CRT palette — not a single token is overridden), green (P1),
@@ -68,6 +78,7 @@ cyan, white (P4). Preferences live in `localStorage` (`dsh-550c-boot:mode`).
 
 The animation and its HTML source were provided by **Voidpoket** ([@Voidpoket](https://github.com/Voidpoket));
 the plugin engineering and port are by **Ziyang Song** ([@yannicksong0106](https://github.com/yannicksong0106)).
-See [CREDITS.md](CREDITS.md).
+See [CREDITS.md](CREDITS.md). This branch is a fork of their
+[dsh-550c-boot](https://github.com/yannicksong0106/dsh-550c-boot) and keeps their MIT terms.
 
-[MIT](LICENSE) © 2026 Ziyang Song
+[MIT](LICENSE) © 2026 Ziyang Song · fork modifications by [@Yuanqingyuang](https://github.com/Yuanqingyuang)
