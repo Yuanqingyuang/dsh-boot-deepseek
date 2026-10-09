@@ -9,7 +9,7 @@
  * without a running profile: the mirror-first lookup and its fallback, the
  * desktop-profile refusal, the install argv, and the routes that get registered.
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { EventEmitter } from 'node:events'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -49,12 +49,14 @@ const factory = new Function(
   'readFileSync',
   'existsSync',
   'spawn',
+  'statSync',
   lift('const VERSION_GLOBAL', 'const FIRST_FRAME_CSS', 'helpers') +
     '; return { compareVersions, updateHandler, applyHandler, mediaHandler, latestPublished, profileInfo, installCommand, packageVersion }',
 )
 
 const readFileSyncStub = (path, encoding) =>
   readFileSync(path instanceof URL ? fileURLToPath(path) : String(path), encoding)
+const statSyncStub = (path) => statSync(path instanceof URL ? fileURLToPath(path) : String(path))
 globalThis.__metaUrl = import.meta.url
 
 const load = (fetchImpl, options = {}) =>
@@ -63,6 +65,7 @@ const load = (fetchImpl, options = {}) =>
     options.readFileSync ?? readFileSyncStub,
     options.existsSync ?? (() => true),
     options.spawn ?? fakeSpawn(0, ''),
+    options.statSync ?? statSyncStub,
   )
 
 const registryOk = (version) => async (url) => {
@@ -285,6 +288,9 @@ console.log('\nfinale media route')
   // range arithmetic (the part that could silently break playback) is pinned.
   const VIDEO = Buffer.from('0123456789ABCDEF') // 16 bytes
   const reads = []
+  // A mutable stat, so "the asset was replaced" can be driven: the cache is keyed
+  // on size + mtime, which is exactly what swapping the file changes.
+  let fileStat = { size: VIDEO.length, mtimeMs: 1000 }
   const { mediaHandler } = load(
     () => {
       throw new Error('this case must not touch the network')
@@ -294,6 +300,7 @@ console.log('\nfinale media route')
         reads.push(String(path))
         return VIDEO
       },
+      statSync: () => fileStat,
     },
   )
 
@@ -310,10 +317,21 @@ console.log('\nfinale media route')
   check('ranges are advertised', full.out.headers['accept-ranges'] === 'bytes', String(full.out.headers['accept-ranges']))
   check('the length is exact', full.out.headers['content-length'] === String(VIDEO.length), String(full.out.headers['content-length']))
   // Every request above already went through the handler: one read of the asset,
-  // cached for the life of the process. (package.json is read separately, by
+  // cached while the file stays put. (package.json is read separately, by
   // packageVersion() at module scope.)
-  const mediaReads = reads.filter((path) => path.includes('media'))
-  check('the asset is read once and cached', mediaReads.length === 1, `${String(reads.length)} reads: ${reads.join(', ')}`)
+  const mediaReads = () => reads.filter((path) => path.includes('media')).length
+  check('the asset is read once and cached', mediaReads() === 1, `${String(reads.length)} reads: ${reads.join(', ')}`)
+
+  // Replacing the asset must be picked up WITHOUT restarting the app. Measured on
+  // a real install before this was keyed: route live, the 15 MB film on disk, and
+  // `content-length` still the previous 1,856,280 bytes served from memory.
+  fileStat = { size: VIDEO.length, mtimeMs: 2000 }
+  const replaced = fakeResponse()
+  mediaHandler(request('GET'), replaced.res)
+  check('a replaced asset is re-read', mediaReads() === 2 && replaced.out.status === 200, `${String(mediaReads())} reads`)
+  const unchanged = fakeResponse()
+  mediaHandler(request('GET'), unchanged.res)
+  check('an unchanged asset stays cached', mediaReads() === 2, `${String(mediaReads())} reads`)
 
   const head = fakeResponse()
   mediaHandler(request('HEAD'), head.res)
