@@ -11,15 +11,32 @@
 [![Topic](https://img.shields.io/badge/topic-dsh--plugin-blue?style=flat-square)](https://github.com/topics/dsh-plugin)
 [![Visitors](https://visitor-badge.laobi.icu/badge?page_id=yannicksong0106.dsh-550c-boot)](https://github.com/yannicksong0106/dsh-550c-boot)
 
-**给 DeepSeek Harness（DSH）加一段 550C 开机片头。**
-每次启动客户端全屏播放，播完渐出，露出真正的界面。*Full-screen 550C boot intro for DSH.*
+**给 DeepSeek Harness（DSH）加一段 DSH 开机片头。**
+每次启动客户端全屏播放，播完渐出，露出真正的界面。*Full-screen DSH boot intro for DeepSeek Harness.*
 
 动画与 HTML 原稿由 **Voidpocket**（[@Voidpoket](https://github.com/Voidpocket)）提供，插件工程与移植由
 **Ziyang Song**（[@yannicksong0106](https://github.com/yannicksong0106)）完成。详见 [CREDITS.md](CREDITS.md)。
 
+> **本机定制版（fork，非上游原版）**
+>
+> - 开头的字标书写换成 **DeepSeek 字标**，沿用上游那套逐笔书写机制（按 x 排序 → 逐元素 clip-path
+>   从左往右写 → 完成后辉光）；`D` 与 `S` 两个大写字母取品牌蓝 `#4d6bfe`，其余白色；
+>   字幕改为 `DEEPSEEK SYSTEM BOOT`。
+> - 片内**所有 `550C` 文案改为 `DSH`**：终端说话人标签、HUD 品牌、固件清单里的 `CA_DSH_ROOT`、
+>   操作者提示等共 77 处，写在 `scripts/extract.mjs` 的第 13 条定点改写里（带数量断言）。
+> - **完整档**在 `SYSTEM IS REWRITTEN` 之后追加播放 `lib/media/intro.mp4`（DeepSeek 赛博片头，
+>   7.05 s / **3840×2160** / H.264+AAC，静音自动播放），由宿主半边经同源路由
+>   `/dsh-550c-boot/media/intro.mp4` 送出（支持 Range）。完整档因此约 19.5 s；简易档不变。
+> - 版本号 `0.4.0-deepseek.1`：故意高于 npm 上的 `0.3.3`，避免设置里的「检查更新 → 立即更新」
+>   把这份定制覆盖回上游原版。
+> - 改动全部落在 `scripts/extract.mjs` 的定点改写里（第 9–13 条，每条都写了原因），
+>   `npm run build` 可复现；`scripts/test-host.mjs` 覆盖媒体路由的 200/206/416/404/405 行为。
+> - `lib/media/intro.mp4` 是 **Steam 创意工坊第三方作品**（《4K120FPS-DeepSeek专业工作模式》）
+>   的副本，版权归原作者；本仓库只是个人定制的留档，仓库里其余代码仍是上游的 MIT 许可。
+
 ![完整模式：47 节点逐点覆写](docs/preview-full.png)
 
-- 🎬 **两个档位**：简易档 4 秒（logo 书写）/ 完整档 16 秒（覆写全流程），可一键关闭
+- 🎬 **两个档位**：简易档 4 秒（字标书写）/ 完整档 16 秒（覆写全流程）+ 片尾视频，可一键关闭
 - ⏭️ **随时跳过**：点击画面或按 `Esc`
 - 🖥️ **盖住 DSH 自己的开机卡片**：首帧由宿主半边在文档解析阶段注入，`HARNESS / Loading plugins…` 不会再露脸
 - 🎨 **四套磷光配色**，默认是原作者的琥珀；桌面窗口右上角那三个原生按钮会被收编成同一套颜色
@@ -27,18 +44,15 @@
 ## 安装
 
 ```sh
-# 从 npm 安装（最省事：免 allowBuilds，市场里也是一条命令）
-dsh plugin --profile web add dsh-550c-boot
-
-# 从 GitHub 安装（仓库带构建产物，无安装期脚本）
-dsh plugin --profile web add github:yannicksong0106/dsh-550c-boot
-
-# 或用预构建 tarball（Release 附件，附件名不带版本号，latest 链接不会随发版失效）
-dsh plugin --profile web add https://github.com/yannicksong0106/dsh-550c-boot/releases/latest/download/dsh-550c-boot.tgz
+# 从本仓库安装（仓库带构建产物，无安装期脚本）
+dsh plugin --profile <profile> add github:Yuanqingyuang/dsh-boot-deepseek
 
 # 或从本地目录安装
-dsh plugin --profile web add <本目录绝对路径>
+dsh plugin --profile <profile> add <本目录绝对路径>
 ```
+
+> **桌面客户端**（`desktop` profile）由 Electron 应用独占管理，`dsh plugin` 会直接拒绝这个 profile：
+> 请在 **设置 → 插件** 里安装，或先用上面的本地目录方式装好再重启客户端。
 
 装完**必须重启一次 DSH**（bundle 在启动时装配）。升级或重装后请按 **Ctrl+Shift+R** 硬刷新——
 DSH 的客户端 bundle 带 `max-age=31536000, immutable`，而 URL 上的 `rev` 是进程 nonce、不随内容变化，
@@ -46,12 +60,12 @@ DSH 的客户端 bundle 带 `max-age=31536000, immutable`，而 URL 上的 `rev`
 
 ## 使用
 
-模式开关在 **设置 → 通用 → 550C 开机动画**，旁边有「预览」按钮可以立刻看一遍。
+模式开关在 **设置 → 通用 → DeepSeek 开机动画**，旁边有「预览」按钮可以立刻看一遍。
 
 | 档位 | 时长 | 内容 |
 |---|---|---|
-| **简易**（默认） | ~4 秒 | 550C logo 逐路径书写 |
-| **完整** | ~16 秒 | logo → 基站接管终端 → 47 节点逐点覆写 → `SYSTEM IS REWRITTEN` |
+| **简易**（默认） | ~4 秒 | DeepSeek 字标逐笔书写 |
+| **完整** | ~19.5 秒 | 字标 → 基站接管终端 → 47 节点逐点覆写 → `SYSTEM IS REWRITTEN` → 片尾视频 |
 | **关闭** | — | 不播放，一张黑屏都不会出现 |
 
 - 动画**播完才渐出**，不等软件加载状态；无论 DSH 是否早已就绪都会完整播完

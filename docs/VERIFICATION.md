@@ -63,5 +63,24 @@ node scripts/verify.mjs --url '…' --mode full  --at 3000 --skip       # 跳过
 截图存在 `.verify/shots/`；README 顶部那三张对外预览在 [`docs/`](.)。
 `.verify/` 整个目录已 gitignore —— 里面有从 app.asar 取出的 DSH 包文件，不该进仓库。
 
+## 本机定制（DeepSeek 版）的验证记录
+
+上游那套断言照跑；下面是这次移植**额外**验到的，全部可复现：
+
+| 项 | 证据 |
+|---|---|
+| 字标几何 | `verify.mjs` 新增的 `wordmark` 探针：`count=8`、`text="DeepSeek"`、`centered=400`（800 视口正中）、`overlap=false`、强调色落在 `S`、`caption="DEEPSEEK SYSTEM BOOT"` |
+| 书写过程 | `simple @1400ms` 截图：最后一个 `k` 正在被 clip-path 写出，前七个已完成 |
+| 完整链路 | `full --timeline` 采样表：10.5s `#final` 亮起 → **11.78s 视频开播**（`paused=false ready=4 1280x720 err=null`）→ 18.9s `t=7.05` 自然播完 → 19.3s 遮罩卸载 |
+| 结尾画面 | `--finale-shot` 在轮询中发现视频确实在播时自动抓帧（`.verify/shots/finale-live.png`），确认 `object-fit:cover` 铺满 |
+| 视频中跳过 | `full @14000ms --skip`：跳过前 `videoBefore={t:3.47, paused:false}`，Esc 后 900ms `hostAfterEsc=false` —— 取消链路会暂停视频并结算 promise，不会卡到 30s 看门狗 |
+| 宿主媒体路由 | `npm test` 新增 13 条：200 全长 / 206 三种 range（`4-7`、`8-`、`-4`）/ 416 / 404（资产缺失）/ 405 / HEAD 无 body / 只读一次并缓存 |
+| 已安装的那一份 | 从 `profiles/desktop/node_modules/dsh-550c-boot`（junction）导入宿主半边并直接驱动：HEAD `200 video/mp4 1856280`、GET 同长、`bytes=0-99` 回 `206 …/1856280` |
+| 无 CSP 拦截 | 全文扫 `app.asar`：所有 CSP 都在隔离上下文（沙箱文件服务、文档预览 iframe、登录小页、Electron 本地页），shell 主页面没有 CSP，同源 `<video>` 不会被拦 |
+
+**一个部署事实**：媒体路由由宿主半边注册，而运行中的宿主进程**不会**因为文件变化而重新导入模块
+（实测：插件管理器「禁用→启用」重跑了 `apply()`，但 ESM 模块缓存未失效，路由仍是空 body 404）。
+所以改完宿主半边必须**重启 DSH**；客户端半边只要硬刷新即可（bundle URL 带进程 nonce）。
+
 > web profile 首次启动会串联几个引导弹窗（内测声明 → API Key），它们盖在整个 shell 之上，
 > 所以全新 profile 下动画会被弹窗挡住。桌面 profile 的引导已经走完，不存在这个问题。

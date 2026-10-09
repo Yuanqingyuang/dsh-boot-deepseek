@@ -50,7 +50,7 @@ const factory = new Function(
   'existsSync',
   'spawn',
   lift('const VERSION_GLOBAL', 'const FIRST_FRAME_CSS', 'helpers') +
-    '; return { compareVersions, updateHandler, applyHandler, latestPublished, profileInfo, installCommand, packageVersion }',
+    '; return { compareVersions, updateHandler, applyHandler, mediaHandler, latestPublished, profileInfo, installCommand, packageVersion }',
 )
 
 const readFileSyncStub = (path, encoding) =>
@@ -60,7 +60,7 @@ globalThis.__metaUrl = import.meta.url
 const load = (fetchImpl, options = {}) =>
   factory(
     fetchImpl,
-    readFileSyncStub,
+    options.readFileSync ?? readFileSyncStub,
     options.existsSync ?? (() => true),
     options.spawn ?? fakeSpawn(0, ''),
   )
@@ -277,6 +277,86 @@ console.log('\nupdate service')
   }
 }
 
+console.log('\nfinale media route')
+{
+  // The one thing the splash needs from the host: the finale video's bytes. The
+  // handler is module-private, so it is driven directly with a stubbed file read —
+  // the assertions then do not depend on the 1.8 MB asset being present, and the
+  // range arithmetic (the part that could silently break playback) is pinned.
+  const VIDEO = Buffer.from('0123456789ABCDEF') // 16 bytes
+  const reads = []
+  const { mediaHandler } = load(
+    () => {
+      throw new Error('this case must not touch the network')
+    },
+    {
+      readFileSync: (path) => {
+        reads.push(String(path))
+        return VIDEO
+      },
+    },
+  )
+
+  const request = (method, range) => ({
+    method,
+    headers: range === undefined ? {} : { range },
+    async *[Symbol.asyncIterator]() {},
+  })
+
+  const full = fakeResponse()
+  mediaHandler(request('GET'), full.res)
+  check('GET answers the whole file', full.out.status === 200 && full.out.body.equals(VIDEO), `status ${String(full.out.status)}`)
+  check('served as video/mp4', full.out.headers['content-type'] === 'video/mp4', String(full.out.headers['content-type']))
+  check('ranges are advertised', full.out.headers['accept-ranges'] === 'bytes', String(full.out.headers['accept-ranges']))
+  check('the length is exact', full.out.headers['content-length'] === String(VIDEO.length), String(full.out.headers['content-length']))
+  // Every request above already went through the handler: one read of the asset,
+  // cached for the life of the process. (package.json is read separately, by
+  // packageVersion() at module scope.)
+  const mediaReads = reads.filter((path) => path.includes('media'))
+  check('the asset is read once and cached', mediaReads.length === 1, `${String(reads.length)} reads: ${reads.join(', ')}`)
+
+  const head = fakeResponse()
+  mediaHandler(request('HEAD'), head.res)
+  check('HEAD sends headers and no body', head.out.status === 200 && head.out.body === null && head.out.headers['content-length'] === '16')
+
+  const mid = fakeResponse()
+  mediaHandler(request('GET', 'bytes=4-7'), mid.res)
+  check('a range answers 206', mid.out.status === 206 && mid.out.headers['content-range'] === 'bytes 4-7/16', String(mid.out.headers['content-range']))
+  check('the ranged body is that slice', mid.out.body.equals(Buffer.from('4567')), String(mid.out.body))
+
+  const open = fakeResponse()
+  mediaHandler(request('GET', 'bytes=8-'), open.res)
+  check('an open-ended range runs to the end', open.out.headers['content-range'] === 'bytes 8-15/16' && open.out.body.length === 8, String(open.out.headers['content-range']))
+
+  const suffix = fakeResponse()
+  mediaHandler(request('GET', 'bytes=-4'), suffix.res)
+  check('a suffix range counts back from the end', suffix.out.headers['content-range'] === 'bytes 12-15/16', String(suffix.out.headers['content-range']))
+
+  const past = fakeResponse()
+  mediaHandler(request('GET', 'bytes=99-120'), past.res)
+  check('an unsatisfiable range answers 416', past.out.status === 416 && past.out.headers['content-range'] === 'bytes */16', String(past.out.status))
+
+  const wrongMethod = fakeResponse()
+  mediaHandler(request('POST'), wrongMethod.res)
+  check('POST is refused with 405', wrongMethod.out.status === 405 && wrongMethod.out.headers.allow === 'GET, HEAD', String(wrongMethod.out.status))
+
+  // A missing asset must not break the splash: 404, and the client half ends the
+  // show on the media error.
+  const { mediaHandler: absentHandler } = load(
+    () => {
+      throw new Error('this case must not touch the network')
+    },
+    {
+      readFileSync: () => {
+        throw new Error('ENOENT')
+      },
+    },
+  )
+  const missing = fakeResponse()
+  absentHandler(request('GET'), missing.res)
+  check('a missing asset answers 404', missing.out.status === 404, String(missing.out.status))
+}
+
 console.log('\nplugin wiring')
 {
   const { apply } = await import(pathToFileURL(LIB).href)
@@ -318,11 +398,13 @@ console.log('\nplugin wiring')
   check('injects webServer optionally', JSON.stringify(injected) === '["webServer"]', JSON.stringify(injected))
   const paths = routes.map((route) => `${route.kind} ${route.path}`)
   check(
-    'registers the check and the update route',
-    paths.includes('exact /dsh-550c-boot/update') && paths.includes('exact /dsh-550c-boot/update/apply'),
+    'registers the finale video, the check and the update route',
+    paths.includes('exact /dsh-550c-boot/media/intro.mp4') &&
+      paths.includes('exact /dsh-550c-boot/update') &&
+      paths.includes('exact /dsh-550c-boot/update/apply'),
     paths.join(', '),
   )
-  check('both handlers are functions', routes.every((route) => typeof route.handler === 'function'))
+  check('every handler is a function', routes.every((route) => typeof route.handler === 'function'))
 }
 
 // The settings rows are rendered and asserted by the browser suite

@@ -36,13 +36,27 @@ const EDGE_CANDIDATES = [
   `${process.env['ProgramFiles(x86)']}\\Google\\Chrome\\Application\\chrome.exe`,
 ]
 
+/**
+ * Flag parsing, position-independent.
+ *
+ * The previous version stepped two at a time, which meant a lone boolean
+ * (`--timeline`, `--finale-shot`) silently swallowed the NEXT flag's value and
+ * shifted every pair after it — `--timeline --finale-shot --out x` parsed as
+ * `--timeline=true, --finale-shot='--out'` and `x` was dropped. Now a value is
+ * consumed only when the next token is not itself a flag.
+ */
 function parseArgs(argv) {
   const out = {}
-  for (let i = 0; i < argv.length; i += 2) {
+  for (let i = 0; i < argv.length; i++) {
     const key = argv[i]
     if (!key.startsWith('--')) continue
     const next = argv[i + 1]
-    out[key.slice(2)] = next === undefined || next.startsWith('--') ? true : next
+    if (next === undefined || next.startsWith('--')) {
+      out[key.slice(2)] = true
+      continue
+    }
+    out[key.slice(2)] = next
+    i++
   }
   return out
 }
@@ -293,11 +307,25 @@ async function main() {
      */
     let skip = null
     if (args.skip === true) {
-      const before = await evaluate(`document.querySelector('.dsh550c-host') !== null`)
+      // What the splash was doing at the instant Esc arrived. Without this the
+      // skip result cannot distinguish "unwound a running finale" from "unwound
+      // an idle overlay", and the finale is exactly the phase that has a video
+      // element and a promise of its own to unwind.
+      const before = await evaluate(`(() => {
+        const host = document.querySelector('.dsh550c-host');
+        const shadow = host === null ? null : host.shadowRoot;
+        const video = shadow === null ? null : shadow.querySelector('.finale-video');
+        return {
+          host: host !== null,
+          stage: shadow === null ? null : (shadow.querySelector('#b-stage') || {}).textContent || null,
+          finalShown: shadow !== null && shadow.querySelector('#final.show') !== null,
+          video: video === null ? null : { t: Math.round(video.currentTime * 100) / 100, paused: video.paused },
+        };
+      })()`)
       await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`)
       await sleep(900)
       const afterEsc = await evaluate(`document.querySelector('.dsh550c-host') !== null`)
-      skip = { hostBefore: before, hostAfterEsc: afterEsc }
+      skip = { hostBefore: before.host, stageBefore: before.stage, finalShownBefore: before.finalShown, videoBefore: before.video, hostAfterEsc: afterEsc }
     }
 
     /**
@@ -307,6 +335,7 @@ async function main() {
      * nodes have flipped to ONLINE, until the overlay unmounts.
      */
     let timeline = null
+    let finaleShot = null
     if (args.timeline === true) {
       const sample = () =>
         evaluate(`(() => {
@@ -331,6 +360,17 @@ async function main() {
               return null;
             })(),
             final: shadow.querySelector('#final.show') !== null,
+            finale: (() => {
+              const video = shadow.querySelector('.finale-video');
+              if (video === null) return null;
+              return {
+                t: Math.round(video.currentTime * 100) / 100,
+                paused: video.paused,
+                ready: video.readyState,
+                size: video.videoWidth + 'x' + video.videoHeight,
+                err: video.error === null ? null : video.error.code,
+              };
+            })(),
             boot: shadow.querySelector('#boot') !== null,
             bootCard: document.querySelector('[data-dsh-boot]') !== null,
             sawBootCard: host.dataset.sawBootCard,
@@ -341,9 +381,24 @@ async function main() {
       // Keep sampling through the pre-shell phase: the overlay is absent until
       // the shell mounts, so "absent" only ends the run AFTER it was once seen.
       let seenOverlay = false
-      for (let i = 0; i < 60; i++) {
+      for (let i = 0; i < 90; i++) {
         const sampleRow = await sample()
         timeline.push({ ms: Date.now() - started, ...sampleRow })
+        // The finale video only exists for ~7 s of a 24 s run, so the frame that
+        // proves it plays is captured from inside the poll rather than guessed
+        // with --at.
+        if (
+          args['finale-shot'] === true &&
+          finaleShot === null &&
+          sampleRow.finale != null &&
+          sampleRow.finale.t >= 1.5
+        ) {
+          const live = await cdp.send('Page.captureScreenshot', { format: 'png' })
+          const livePath = resolve(root, '.verify/shots/finale-live.png')
+          mkdirSync(dirname(livePath), { recursive: true })
+          writeFileSync(livePath, Buffer.from(live.data, 'base64'))
+          finaleShot = { ms: Date.now() - started, currentTime: sampleRow.finale.t, screenshot: livePath }
+        }
         if (sampleRow.gone !== true) seenOverlay = true
         else if (seenOverlay) break
         await sleep(400)
@@ -400,6 +455,46 @@ async function main() {
         logLines: shadow === null ? 0 : shadow.querySelectorAll('#mainBody .ln').length,
         nodesOnline: shadow === null ? 0 : shadow.querySelectorAll('#nodeGrid .uav.done').length,
         mode: window.localStorage.getItem('dsh-550c-boot:mode'),
+        // The finale video (added for the DeepSeek port): present, playing,
+        // and did the decoder actually take the file?
+        finaleStage: shadow !== null && shadow.querySelector('.finale') !== null,
+        finaleShown: shadow !== null && shadow.querySelector('.finale.show') !== null,
+        finaleVideo: (() => {
+          const video = shadow === null ? null : shadow.querySelector('.finale-video');
+          if (video === null) return null;
+          return {
+            src: video.getAttribute('src'),
+            currentTime: Math.round(video.currentTime * 100) / 100,
+            duration: Number.isFinite(video.duration) ? Math.round(video.duration * 100) / 100 : null,
+            paused: video.paused,
+            muted: video.muted,
+            readyState: video.readyState,
+            networkState: video.networkState,
+            size: video.videoWidth + 'x' + video.videoHeight,
+            error: video.error === null ? null : { code: video.error.code, message: video.error.message },
+          };
+        })(),
+        // The wordmark: eight <text> nodes laid out by layoutWordmark(), so the
+        // row's real geometry can be asserted instead of eyeballed.
+        wordmark: shadow === null ? null : (() => {
+          const glyphs = Array.from(shadow.querySelectorAll('#logo [data-w]'));
+          if (glyphs.length === 0) return null;
+          const boxes = glyphs.map((el) => el.getBBox());
+          const left = Math.min(...boxes.map((box) => box.x));
+          const right = Math.max(...boxes.map((box) => box.x + box.width));
+          return {
+            count: glyphs.length,
+            text: glyphs.map((el) => el.textContent).join(''),
+            left: Math.round(left),
+            right: Math.round(right),
+            width: Math.round(right - left),
+            centered: Math.round((left + right) / 2),
+            overlap: boxes.some((box, index) => index > 0 && box.x < boxes[index - 1].x + boxes[index - 1].width),
+            font: getComputedStyle(glyphs[0]).fontFamily,
+            accent: glyphs.filter((el) => getComputedStyle(el).fill === 'rgb(77, 107, 254)').map((el) => el.textContent).join(''),
+            caption: textOf('#bootText'),
+          };
+        })(),
       };
     })()`)
 
@@ -410,7 +505,7 @@ async function main() {
     writeFileSync(outPath, Buffer.from(shot.data, 'base64'))
 
     if (timeline !== null) {
-      console.log('   ms  stage      pct    node        logs  on  wr  wins  elapsed  final  bootCard  overlay  sawCardAtMount')
+      console.log('   ms  stage      pct    node        logs  on  wr  wins  elapsed  final  bootCard  overlay  sawCardAtMount  finale (t / paused / ready / size / err)')
       for (const row of timeline) {
         if (row.gone === true) {
           console.log(`${String(row.ms).padStart(5)}  overlay absent${row.sawBootCard === undefined ? '' : '   sawBootCard=' + row.sawBootCard}`)
@@ -421,14 +516,17 @@ async function main() {
             `${String(row.stage ?? '—').padEnd(10)}${String(row.pct ?? '—').padEnd(6)}${String(row.node ?? '—').padEnd(11)}` +
             `${String(row.logs).padStart(4)}${String(row.online).padStart(4)}${String(row.writing).padStart(4)}` +
             `${String(row.windows).padStart(6)}  ${String(row.elapsed ?? '—').padEnd(8)}` +
-            `${String(row.final).padStart(6)}  ${String(row.bootCard).padEnd(9)}  yes      ${row.sawBootCard ?? ''}`,
+            `${String(row.final).padStart(6)}  ${String(row.bootCard).padEnd(9)}  yes      ${String(row.sawBootCard ?? '').padEnd(15)}` +
+            (row.finale === null || row.finale === undefined
+              ? '—'
+              : `${String(row.finale.t).padStart(5)}s ${String(row.finale.paused).padEnd(5)} r${String(row.finale.ready)} ${row.finale.size} err=${String(row.finale.err)}`),
         )
       }
     }
 
     console.log(
       JSON.stringify(
-        { dismissed, dismissedAfterReload, at, mode, scheme, state, settings, skip, probe, logs: logs.slice(-25), screenshot: outPath },
+        { dismissed, dismissedAfterReload, at, mode, scheme, state, settings, skip, probe, finaleShot, logs: logs.slice(-25), screenshot: outPath },
         null,
         2,
       ),

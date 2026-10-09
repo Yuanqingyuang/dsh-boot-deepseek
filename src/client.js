@@ -486,11 +486,11 @@ function SettingsRow() {
     React.createElement(
       'div',
       { className: 'dsh550c-row-text' },
-      React.createElement('div', { className: 'dsh550c-row-title' }, '550C 开机动画'),
+      React.createElement('div', { className: 'dsh550c-row-title' }, 'DeepSeek 开机动画'),
       React.createElement(
         'div',
         { className: 'dsh550c-row-desc' },
-        '启动时播放 550C 片头；完整模式可用点击或 Esc 跳过。',
+        '启动时播放 DeepSeek 片头；完整档走完覆写流程后播放赛博片头，点击或 Esc 可跳过。',
       ),
     ),
     React.createElement(

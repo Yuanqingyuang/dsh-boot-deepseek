@@ -65,13 +65,62 @@ for (const [pattern, replacement] of cssRewrites) {
 }
 must(!/(^|\n)\s*(html|body)\b/.test(css), 'stylesheet still targets html/body')
 
+// 10. DeepSeek additions to that same sheet: the wordmark's type and accent
+//     colour, and the full-frame stage the finale video plays on. Appended —
+//     never merged into the rules above — so the original stylesheet stays
+//     byte-identical and a re-extract cannot drift.
+const EXTRA_CSS = `
+  /* ===== DeepSeek 字标（替换原厂字标）===== */
+  #logo text{font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Noto Sans SC","Microsoft YaHei",sans-serif;font-size:138px;font-weight:700;letter-spacing:0;}
+  .blue{fill:#4d6bfe;stroke:none;}
+  #logo.finished .blue{animation:glowB 2.6s ease-in-out infinite;}
+  @keyframes glowB{0%,100%{filter:drop-shadow(0 0 8px rgba(77,107,254,.65));}50%{filter:drop-shadow(0 0 20px rgba(77,107,254,1));}}
+
+  /* ===== 结尾视频（SYSTEM IS REWRITTEN 之后）===== */
+  .finale{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:#000;opacity:0;transition:opacity .5s ease;pointer-events:none;}
+  .finale.show{opacity:1;}
+  .finale-video{display:block;width:100%;height:100%;object-fit:cover;}
+`
+css += EXTRA_CSS
+must(css.includes('.finale-video'), 'the finale stylesheet did not land in the bundle')
+
 // ── markup ──────────────────────────────────────────────────────────────────
-const bootMarkup = sliceElement(html, '<div id="boot">')
 const appMarkup = sliceElement(html, '<div id="app">')
 const dimMarkup = sliceElement(html, '<div id="dim">')
 const finalMarkup = sliceElement(html, '<div id="final">')
 // `#hint` ("— REFRESH TO REPLAY —") is deliberately dropped: in the plugin the
 // overlay fades out instead of inviting a page refresh.
+
+// 9. Opening lettering: 550C → DeepSeek.
+//
+//    The page draws its logotype as seven hand-tuned <path> elements and
+//    reveals them one at a time, sorted by x (see the wrapper's playBoot). The
+//    wordmark keeps that mechanism untouched — one <text> node per letter,
+//    tagged `data-w` — and src/show.js lays the row out from the real glyph
+//    boxes before the wipe starts, so it stays centred on whatever font the
+//    machine resolves instead of depending on metrics this script cannot know.
+//    The two capitals carry the accent colour the red 0 used to: D and S in
+//    brand colour, the rest white, all of them glowing once the mark is finished.
+const WORDMARK_TEXT = 'DeepSeek'
+const WORDMARK_ACCENTS = 'DS'
+const wordmarkMarkup =
+  '<g id="logo" filter="url(#despike)">\n' +
+  Array.from(WORDMARK_TEXT)
+    .map(
+      (glyph, index) =>
+        `        <text class="${WORDMARK_ACCENTS.includes(glyph) ? 'blue' : 'white'}" data-w="${String(index)}" x="0" y="162">${glyph}</text>`,
+    )
+    .join('\n') +
+  '\n      </g>'
+
+let bootMarkup = sliceElement(html, '<div id="boot">')
+const logoOpen = bootMarkup.indexOf('<g id="logo"')
+const logoClose = bootMarkup.lastIndexOf('</g>', bootMarkup.lastIndexOf('</svg>'))
+must(logoOpen !== -1 && logoClose > logoOpen, 'the #logo group was not found in the boot markup')
+bootMarkup = bootMarkup.slice(0, logoOpen) + wordmarkMarkup + bootMarkup.slice(logoClose + '</g>'.length)
+must(bootMarkup.includes('data-w="0"'), 'the DeepSeek wordmark did not land in the markup')
+must(bootMarkup.includes('550C SYSTEM BOOT'), 'the boot caption was not found')
+bootMarkup = bootMarkup.replace('550C SYSTEM BOOT', 'DEEPSEEK SYSTEM BOOT')
 
 // ── script ──────────────────────────────────────────────────────────────────
 const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/)
@@ -136,7 +185,140 @@ must(!/bootUp/.test(js), 'bootUp() was not removed')
 js = js.replace(/\n\s*\$\(["']#hint["']\)\.classList\.add\(["']show["']\);/, '')
 must(!/#hint/.test(js), '#hint reference survived the rewrite')
 
-// 8. `#final` and the phase machine stay exactly as written.
+// 8. `#final` and the phase machine stay exactly as written, except for the two
+//    DeepSeek rewrites below.
+
+// 11. playBoot selects the logotype. The 550C mark is <path> elements; the
+//     DeepSeek wordmark is <text> nodes, so the selector follows the markup —
+//     and the row is laid out (centred, from real glyph boxes) before the
+//     x-order sort runs, since that sort decides the writing order.
+js = js.replace(
+  "const paths = Array.from(logo.querySelectorAll('path'));",
+  "const paths = Array.from(logo.querySelectorAll('[data-w]'));\n  layoutWordmark();",
+)
+must(js.includes("querySelectorAll('[data-w]')"), 'playBoot still selects the 550C paths')
+
+// 12. The finale. SYSTEM IS REWRITTEN keeps its beat, and then the user's
+//     DeepSeek intro plays full-frame; the run ends when the video does. The
+//     function itself is appended below (FINALE_FUNCTIONS) so this stays a
+//     one-line handover and the phase machine above reads as it always did.
+js = js.replace(
+  '  $("#final").classList.add("show");\n  await sleep(900);',
+  '  $("#final").classList.add("show");\n  await sleep(900);\n  await playFinale();',
+)
+must(js.includes('await playFinale();'), '#final no longer hands over to the finale')
+
+// 13. Branding: every "550C" the page prints becomes "DSH" — the terminal
+//     speaker tags, the HUD brand, the firmware listing's CA_550C, the operator
+//     copy. Applied to the EXTRACTED pieces only (never to this script, and
+//     never to the hand-written halves), so the archived source page stays the
+//     author's original and a re-extract cannot lose the rebrand. The counts are
+//     asserted because a rewrite that silently stops matching is worse than one
+//     that fails loudly.
+const occurrences = (haystack) => haystack.split('550C').length - 1
+const rebrand = (source, where) => {
+  const found = occurrences(source)
+  must(found > 0, `no 550C text found in ${where}`)
+  return { text: source.replaceAll('550C', 'DSH'), found: found }
+}
+// The boot markup and the stylesheet are already rebranded by step 9 (the
+// wordmark replaced the whole logotype group and the caption with it), so both
+// are asserted to be clean rather than rewritten.
+must(occurrences(css) === 0, 'the stylesheet unexpectedly mentions 550C')
+must(occurrences(bootMarkup) === 0, 'the boot markup still mentions 550C')
+const jsRebrand = rebrand(js, 'the ported script')
+const appRebrand = rebrand(appMarkup + dimMarkup + finalMarkup, 'the app markup')
+js = jsRebrand.text
+const appMarkupRebranded = appRebrand.text
+process.stdout.write(
+  `extract: rebranded 550C → DSH (js ${String(jsRebrand.found)}, app ${String(appRebrand.found)})\n`,
+)
+
+/**
+ * Appended to the ported script: the wordmark layout and the finale video.
+ *
+ * Both lean on the wrapper's scope (`stage`, `later`, `finaleVideo`,
+ * `finaleSettle`), which is why they are injected here rather than living in a
+ * file of their own: they are part of the port, not of the plugin's shell.
+ */
+const FINALE_FUNCTIONS = `
+/* ===== DeepSeek 结尾视频（由 scripts/extract.mjs 注入）===== */
+
+/** 宿主半边注册的同源路由，见 lib/index.js。 */
+const FINALE_SRC = "/dsh-550c-boot/media/intro.mp4";
+/** 看门狗：视频 7.05 s，媒体事件不来时也必须收场。 */
+const FINALE_MAX_MS = 9000;
+
+/**
+ * 把 data-w 的字形按真实字宽排成一行并居中。
+ * 用 ink box 而不是 advance width，所以换任何字体都不会撞字或留缝。
+ */
+function layoutWordmark(){
+  const glyphs = Array.from(stage.querySelectorAll("#logo [data-w]"));
+  if (glyphs.length === 0) return;
+  const gap = 18;
+  const boxes = glyphs.map(el => {
+    const box = el.getBBox();
+    return { el: el, x: box.x, w: box.width };
+  });
+  const total = boxes.reduce((sum, item) => sum + item.w, 0) + gap * (boxes.length - 1);
+  let cursor = (800 - total) / 2;
+  for (const item of boxes){
+    const current = Number(item.el.getAttribute("x")) || 0;
+    item.el.setAttribute("x", String(current + (cursor - item.x)));
+    cursor += item.w + gap;
+  }
+}
+
+/**
+ * 播放结尾视频：淡入 → 播完 → resolve。
+ * 媒体事件不来（文件未安装 / 解码失败 / 自动播放被拒）时由看门狗收场，
+ * 所以片头永远不会因为视频而卡住。跳过由 wrapper 的 cancel() 接手。
+ */
+function playFinale(){
+  return new Promise(resolve => {
+    const wrap = document.createElement("div");
+    wrap.className = "finale";
+    const video = document.createElement("video");
+    video.className = "finale-video";
+    video.src = FINALE_SRC;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    wrap.appendChild(video);
+    stage.appendChild(wrap);
+    finaleVideo = video;
+
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      finaleSettle = null;
+      resolve();
+    };
+    finaleSettle = settle;
+
+    const reveal = () => requestAnimationFrame(() => wrap.classList.add("show"));
+    if (video.readyState >= 2) reveal();
+    else video.addEventListener("canplay", reveal, { once: true });
+
+    later(settle, FINALE_MAX_MS);
+    video.addEventListener("ended", settle, { once: true });
+    video.addEventListener("error", settle, { once: true });
+
+    const started = video.play();
+    if (started && typeof started.catch === "function") {
+      // A refused autoplay (or a detached element) means there is nothing to
+      // show: hand the screen back at once instead of holding a black frame for
+      // the whole watchdog.
+      started.catch(() => { settle(); });
+    }
+  });
+}
+`
 
 const wrapperHead = `/**
  * GENERATED by scripts/extract.mjs — do not edit by hand.
@@ -157,6 +339,7 @@ function createShow(stage, options) {
   let cancelled = false;
   const pending = new Set();
   let clockTimer = null, fpsTimer = null;
+  let finaleVideo = null, finaleSettle = null;
 
   /** Cancellable sleep: rejects with CANCELLED once the show is skipped. */
   function sleep(ms) {
@@ -193,6 +376,17 @@ function createShow(stage, options) {
     pending.clear();
     try { stopCode(); } catch (error) { /* not started yet */ }
     try { stopLink(); } catch (error) { /* not started yet */ }
+    // The finale video is not a timer, so a skip has to stop it by hand and
+    // settle its promise — otherwise the awaited phase would never return.
+    if (finaleVideo !== null) {
+      try { finaleVideo.pause(); } catch (error) { /* already detached */ }
+      finaleVideo = null;
+    }
+    if (finaleSettle !== null) {
+      const settle = finaleSettle;
+      finaleSettle = null;
+      settle();
+    }
     if (clockTimer !== null) clearInterval(clockTimer);
     if (fpsTimer !== null) clearInterval(fpsTimer);
   }
@@ -234,12 +428,13 @@ const assetsOut =
   banner('assets', 'stylesheet + markup extracted from the original page') +
   `const CSS_550C = ${JSON.stringify(css)};\n\n` +
   `const BOOT_MARKUP = ${JSON.stringify(bootMarkup)};\n\n` +
-  `const APP_MARKUP = ${JSON.stringify(appMarkup + dimMarkup + finalMarkup)};\n`
+  `const APP_MARKUP = ${JSON.stringify(appMarkupRebranded)};\n`
 
 const showOut =
   banner('show', 'the original animation script, adapted for a shadow root') +
   wrapperHead +
   js +
+  FINALE_FUNCTIONS +
   wrapperTail
 
 for (const [file, text] of [['src/assets.js', assetsOut], ['src/show.js', showOut]]) {

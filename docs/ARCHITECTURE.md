@@ -31,6 +31,15 @@ cordis.patch.yml          bundle 补丁：把插件挂进 profile
 | 删掉页面级的空格键监听和自动启动 | 触发权归遮罩层，页面级监听会重复触发 |
 | 删掉 `#hint`（"REFRESH TO REPLAY"） | 插件是渐出，不是提示刷新 |
 
+本机定制（DeepSeek 版）追加的四条，编号接着上面：
+
+| 改写 | 原因 |
+|---|---|
+| `#logo` 的 550C 路径 → 8 个 `<text data-w>` 字形 | 开头字标换 DeepSeek，但**书写机制一点没动**：仍按 x 排序、逐元素 clip-path 左→右写、写完加 `finished` 触发辉光。`layoutWordmark()` 用真实 ink box 现场排版并居中，所以换任何字体都不会撞字或偏位 |
+| `bootText` 文案 → `DEEPSEEK SYSTEM BOOT` | 字幕跟着字标走 |
+| `playBoot` 的选择器 `path` → `[data-w]` | 标记换了，选择器跟着换；`layoutWordmark()` 插在排序之前，因为排序决定书写顺序 |
+| `#final` 之后 `await playFinale()` | `SYSTEM IS REWRITTEN` 保留自己的节拍，之后全屏播放 `lib/media/intro.mp4`（宿主半边经同源路由送出）；视频播完 / 出错 / 自动播放被拒 / 超时都会收场，跳过由 wrapper 的 `cancel()` 暂停视频并结算 promise |
+
 **为什么用 Shadow DOM**：原页面的 CSS 里有 `.w`、`.ln`、`.dt`、`.sect` 这类极通用的类名，
 放进宿主文档会污染 DSH 自己的界面。Shadow DOM 让原样式表原样生效且零泄漏。
 

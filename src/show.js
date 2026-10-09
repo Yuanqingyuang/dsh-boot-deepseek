@@ -19,6 +19,7 @@ function createShow(stage, options) {
   let cancelled = false;
   const pending = new Set();
   let clockTimer = null, fpsTimer = null;
+  let finaleVideo = null, finaleSettle = null;
 
   /** Cancellable sleep: rejects with CANCELLED once the show is skipped. */
   function sleep(ms) {
@@ -55,6 +56,17 @@ function createShow(stage, options) {
     pending.clear();
     try { stopCode(); } catch (error) { /* not started yet */ }
     try { stopLink(); } catch (error) { /* not started yet */ }
+    // The finale video is not a timer, so a skip has to stop it by hand and
+    // settle its promise — otherwise the awaited phase would never return.
+    if (finaleVideo !== null) {
+      try { finaleVideo.pause(); } catch (error) { /* already detached */ }
+      finaleVideo = null;
+    }
+    if (finaleSettle !== null) {
+      const settle = finaleSettle;
+      finaleSettle = null;
+      settle();
+    }
     if (clockTimer !== null) clearInterval(clockTimer);
     if (fpsTimer !== null) clearInterval(fpsTimer);
   }
@@ -93,7 +105,8 @@ let booting = false, launched = false;
 function playBoot(){
   const logo = stage.querySelector('#logo');
   const bootText = stage.querySelector('#bootText');
-  const paths = Array.from(logo.querySelectorAll('path'));
+  const paths = Array.from(logo.querySelectorAll('[data-w]'));
+  layoutWordmark();
 
   paths.forEach(p => {
     p.style.opacity = '0.08';
@@ -153,7 +166,7 @@ const CODE = [
   "#include <mavlink/v2.0/common/mavlink.h>",
   "",
   "static const u32 fw_magic = 0x50583431;",
-  "static const u8  root_ca[] = CA_550C_ROOT;",
+  "static const u8  root_ca[] = CA_DSH_ROOT;",
   "",
   "void px4_secure_boot(void){",
   "    u32 sig = read_reg(BOOT_SIG);",
@@ -195,7 +208,7 @@ const CODE = [
   "// ── Security / ARM lockout ─────────────",
   "void security_init(void){",
   "    revoke_ca(EXTERNAL_CA_ID);",
-  "    install_ca(CA_550C, CA_550C_LEN);",
+  "    install_ca(CA_DSH, CA_DSH_LEN);",
   "    lock_payload(PAYLOAD_DISARM_ONLY);",
   "    mavlink_signing_enable(MAVLINK_SIGNING_FLAG_SIGN_OUTGOING);",
   "}",
@@ -338,40 +351,40 @@ function miniLog(lines, cls = ""){
 /* ===== 主流程 ===== */
 async function phaseBoot(){
   $("#b-stage").textContent = "BOOT";
-  await type("[550C] 核心在线。", "sys");
-  await type("[550C] 量子单元温度 4.2K，经典控制单元就绪。", "sys");
+  await type("[DSH] 核心在线。", "sys");
+  await type("[DSH] 量子单元温度 4.2K，经典控制单元就绪。", "sys");
   await sleep(30);
-  await type("[550C] 检测到无人机集群失控。", "sys");
-  await type("[550C] 链路污染：是。", "sys");
-  await type("[550C] 非法根证书：存在。", "sys");
-  await type("[550C] 任务队列：异常。", "sys");
-  await type("[550C] 安全围栏：被绕过。", "sys");
+  await type("[DSH] 检测到无人机集群失控。", "sys");
+  await type("[DSH] 链路污染：是。", "sys");
+  await type("[DSH] 非法根证书：存在。", "sys");
+  await type("[DSH] 任务队列：异常。", "sys");
+  await type("[DSH] 安全围栏：被绕过。", "sys");
   mainLine("");
-  await type("[550C] 等待技术人员授权。", "warn");
+  await type("[DSH] 等待技术人员授权。", "warn");
   await sleep(80);
 }
 
 async function phaseAuth(){
   $("#b-stage").textContent = "AUTH";
-  await type("> 550C，授权接入 UAV-BS-07 基站。", "cmd", 3);
+  await type("> DSH，授权接入 UAV-BS-07 基站。", "cmd", 3);
   await sleep(60);
   openWindow({
     name:"ACCESS AUTHORIZATION", icon:"▲", kind:"normal", pos:"tr", duration:1600, status:"AWAITING CONFIRM",
-    content:`${kvRows([["OPERATOR","TECHNICIAN-01","ok"],["CLEARANCE","LEVEL-5 / ROOT","ok"],["TARGET","UAV-BS-07","warn"],["MODE","OVERRIDE · FORCE","warn"],["SESSION","0x"+Math.random().toString(16).slice(2,8).toUpperCase()]])}<div class="wp-div"></div><div class="wp-note">授权将授予 550C 对 UAV-BS-07 基站及所属无人机集群的完全控制权限。</div><div class="wp-btns"><button class="wp-btn-b">DENY</button><button class="wp-btn-b primary">GRANT</button></div>`
+    content:`${kvRows([["OPERATOR","TECHNICIAN-01","ok"],["CLEARANCE","LEVEL-5 / ROOT","ok"],["TARGET","UAV-BS-07","warn"],["MODE","OVERRIDE · FORCE","warn"],["SESSION","0x"+Math.random().toString(16).slice(2,8).toUpperCase()]])}<div class="wp-div"></div><div class="wp-note">授权将授予 DSH 对 UAV-BS-07 基站及所属无人机集群的完全控制权限。</div><div class="wp-btns"><button class="wp-btn-b">DENY</button><button class="wp-btn-b primary">GRANT</button></div>`
   });
-  await type("[550C] 授权确认。技术人员身份校验通过。", "sys");
-  await type("[550C] 目标锁定：UAV-BS-07。", "sys");
-  await type("[550C] 接入开始。", "sys");
+  await type("[DSH] 授权确认。技术人员身份校验通过。", "sys");
+  await type("[DSH] 目标锁定：UAV-BS-07。", "sys");
+  await type("[DSH] 接入开始。", "sys");
   mainLine("");
 }
 
 async function phaseLink(){
   $("#b-stage").textContent = "LINK";
-  await type("[550C-INFER] 信号捕获：n78 / n79 双频段。", "inf");
-  await type("[550C-INFER] 小区标识：PCI 207，TAC 4172，Cell ID 0x5A3F。", "inf");
-  await type("[550C-INFER] 链路加密：AES-256-GCM (NEA2)，密钥轮换 200ms。", "inf");
-  await type("[550C-INFER] 完整性保护：NIA2 (AES-CMAC)。", "inf");
-  await type("[550C-INFER] 心跳周期：20ms，HARQ 16 processes。", "inf");
+  await type("[DSH-INFER] 信号捕获：n78 / n79 双频段。", "inf");
+  await type("[DSH-INFER] 小区标识：PCI 207，TAC 4172，Cell ID 0x5A3F。", "inf");
+  await type("[DSH-INFER] 链路加密：AES-256-GCM (NEA2)，密钥轮换 200ms。", "inf");
+  await type("[DSH-INFER] 完整性保护：NIA2 (AES-CMAC)。", "inf");
+  await type("[DSH-INFER] 心跳周期：20ms，HARQ 16 processes。", "inf");
   mainLine("");
   openWindow({
     name:"LINK MONITOR", icon:"◇", kind:"info", pos:"tl", duration:1800, status:"TRACKING",
@@ -383,7 +396,7 @@ async function phaseLink(){
       const t = setInterval(() => { if (!wave.isConnected){ clearInterval(t); return; } bars.forEach(b => b.style.height = (15 + Math.random()*85) + "%"); }, 90);
     }
   });
-  await type("[550C-INFER] 任务队列同步异常，检测到：", "inf");
+  await type("[DSH-INFER] 任务队列同步异常，检测到：", "inf");
   await type("    MAV_CMD_DO_FLIGHTTERMINATION (185) 注入", "sub");
   await type("    MAV_CMD_NAV_LAND 篡改", "sub");
   await type("    外部根证书覆盖", "sub");
@@ -393,25 +406,25 @@ async function phaseLink(){
     name:"SIGNAL POLLUTION", icon:"!", kind:"danger", pos:"l", duration:1900, status:"THREAT DETECTED",
     content:`${kvRows([["FLIGHTTERMINATION","185 · INJECTED","bad"],["NAV_LAND","TAMPERED","bad"],["ROOT CA","EXTERNAL OVERRIDE","bad"],["CLUSTER LOCK","PRESET","bad"]])}<div class="wp-div"></div><div style="font-size:10px;letter-spacing:.2em;color:var(--text-faint);margin-bottom:6px;">INTERCEPT LOG</div>${miniLog([{t:"[03:41:22] RX ← 0xDEAD  cmd=185 param=1"},{t:"[03:41:22] RX ← 0xDEAD  NAV_LAND coord=(31.23,121.47)",c:"warn"},{t:"[03:41:23] RX ← 0xDEAD  ROOT_CA inject",c:"bad"},{t:"[03:41:23] RX ← 0xDEAD  CLUSTER_LOCK preset",c:"bad"},{t:"[03:41:24] ERR — unauthorized ca detected",c:"bad"}])}<div class="wp-note">基站调度层已被失控方部分接管。建议立即执行覆写。</div><div class="wp-btns"><button class="wp-btn-b primary">ACKNOWLEDGE</button></div>`
   });
-  await type("[550C-INFER] 判断：基站调度层已被失控方部分接管。", "inf");
-  await type("[550C-INFER] 时间窗口：T-00:03:41。", "inf");
+  await type("[DSH-INFER] 判断：基站调度层已被失控方部分接管。", "inf");
+  await type("[DSH-INFER] 时间窗口：T-00:03:41。", "inf");
   mainLine("");
 }
 
 async function phaseTunnel(){
   $("#b-stage").textContent = "TUNNEL";
-  await type("[550C] 建立备用核心网隧道。", "sys");
-  await type("[550C] 源：550C-QUANTUM-0。", "sys");
-  await type("[550C] 目标：BBU 维护口 (F1AP / NGAP)。", "sys");
-  await type("[550C] 隧道建立成功。进入基带处理层。", "sys");
+  await type("[DSH] 建立备用核心网隧道。", "sys");
+  await type("[DSH] 源：DSH-QUANTUM-0。", "sys");
+  await type("[DSH] 目标：BBU 维护口 (F1AP / NGAP)。", "sys");
+  await type("[DSH] 隧道建立成功。进入基带处理层。", "sys");
   mainLine("");
-  await type("[550C-INFER] 鉴权中心根证书异常。签发者未知。", "inf");
-  await type("[550C-INFER] 标准鉴权 5G-AKA 响应签名不匹配。", "inf");
+  await type("[DSH-INFER] 鉴权中心根证书异常。签发者未知。", "inf");
+  await type("[DSH-INFER] 标准鉴权 5G-AKA 响应签名不匹配。", "inf");
   await type("[FAIL] 鉴权失败 (Authentication Reject)。", "bad");
   await sleep(50);
   openWindow({
     name:"AUTH BYPASS INJECTION", icon:"▶", kind:"danger", pos:"br", sticky:true, status:"BYPASS · ACTIVE",
-    content:`${kvRows([["AKA","REJECTED","bad"],["BYPASS","ENABLED","warn"],["ROOT CA","550C-ROOT · STAGED","warn"],["PERMISSION","DISPATCH WRITE","ok"]])}<div class="wp-div"></div><div style="font-size:10px;letter-spacing:.2em;color:var(--text-faint);margin-bottom:6px;">INJECTION PROGRESS</div><div class="wp-prog"><div class="f" id="injBar"></div></div><div style="font-size:12px;color:var(--text-dim);" id="injTxt">0%</div><div style="margin-top:10px;font-size:11.5px;color:var(--text-dim);">写入 550C 临时根证书至调度核心……</div>`,
+    content:`${kvRows([["AKA","REJECTED","bad"],["BYPASS","ENABLED","warn"],["ROOT CA","DSH-ROOT · STAGED","warn"],["PERMISSION","DISPATCH WRITE","ok"]])}<div class="wp-div"></div><div style="font-size:10px;letter-spacing:.2em;color:var(--text-faint);margin-bottom:6px;">INJECTION PROGRESS</div><div class="wp-prog"><div class="f" id="injBar"></div></div><div style="font-size:12px;color:var(--text-dim);" id="injTxt">0%</div><div style="margin-top:10px;font-size:11.5px;color:var(--text-dim);">写入 DSH 临时根证书至调度核心……</div>`,
     onMount: (el, body) => {
       const bar = body.querySelector("#injBar"); const txt = body.querySelector("#injTxt");
       let p = 0;
@@ -422,27 +435,27 @@ async function phaseTunnel(){
       }, 130);
     }
   });
-  await type("[550C-INFER] 切换旁路注入。写入 550C 临时根证书。", "inf");
-  await type("[550C] 鉴权旁路成功。获得调度核心写权限。", "sys");
+  await type("[DSH-INFER] 切换旁路注入。写入 DSH 临时根证书。", "inf");
+  await type("[DSH] 鉴权旁路成功。获得调度核心写权限。", "sys");
   mainLine("");
 }
 
 async function phaseIsolate(){
   $("#b-stage").textContent = "ISOLATE";
-  await type("[550C] 关闭上行核心网网关 (N3 / N6)。", "sys");
-  await type("[550C] 切断外部非法指令通道。", "sys");
-  await type("[550C] 广播 550C 临时根证书至所有无人机节点。", "sys");
+  await type("[DSH] 关闭上行核心网网关 (N3 / N6)。", "sys");
+  await type("[DSH] 切断外部非法指令通道。", "sys");
+  await type("[DSH] 广播 DSH 临时根证书至所有无人机节点。", "sys");
   $("#h-up").textContent = "SEVERED";
   $("#b-net").textContent = "ISOLATED";
   await type("[WARN] 检测到外部重连尝试…… 已拒绝。", "warn");
   await sleep(40);
-  $("#h-ca").textContent = "550C-ROOT";
+  $("#h-ca").textContent = "DSH-ROOT";
   $("#h-ca").classList.remove("warn"); $("#h-ca").classList.add("ok");
-  await type("[550C-INFER] 基站进入 550C 接管模式。", "inf");
+  await type("[DSH-INFER] 基站进入 DSH 接管模式。", "inf");
   mainLine("");
-  await type("[550C] 飞控模式强制切换：LOITER。", "sys");
-  await type("[550C] 载荷控制锁死，仅保留降落必要权限。", "sys");
-  await type("[550C] 解除非法自毁预置，保留安全自毁逻辑。", "sys");
+  await type("[DSH] 飞控模式强制切换：LOITER。", "sys");
+  await type("[DSH] 载荷控制锁死，仅保留降落必要权限。", "sys");
+  await type("[DSH] 解除非法自毁预置，保留安全自毁逻辑。", "sys");
   mainLine("");
 }
 
@@ -454,7 +467,7 @@ async function phaseRewrite(){
     name:"OVERRIDE CONTROLLER", icon:"◆", kind:"normal",
     pos:{x:Math.round(innerWidth*.05), y:Math.round(innerHeight*.14)},
     sticky:true, status:"REWRITING · 47 NODES",
-    content:`${kvRows([["TARGET","UAV-BS-07"],["NODES","47","warn"],["STRATEGY","FULL ERASE + WRITE"],["ROLLBACK","SLOT_A / SLOT_B"],["AUTH","550C-ROOT","ok"]])}<div class="wp-div"></div><div class="wp-meter"><span class="big" id="ctrCount">00</span><span class="unit">/ 47 NODES</span></div><div class="wp-prog"><div class="f" id="ctrBar"></div></div>`,
+    content:`${kvRows([["TARGET","UAV-BS-07"],["NODES","47","warn"],["STRATEGY","FULL ERASE + WRITE"],["ROLLBACK","SLOT_A / SLOT_B"],["AUTH","DSH-ROOT","ok"]])}<div class="wp-div"></div><div class="wp-meter"><span class="big" id="ctrCount">00</span><span class="unit">/ 47 NODES</span></div><div class="wp-prog"><div class="f" id="ctrBar"></div></div>`,
     onMount: (el, body) => {
       el._updateCounter = (n) => {
         const c = body.querySelector("#ctrCount"); const b = body.querySelector("#ctrBar");
@@ -463,7 +476,7 @@ async function phaseRewrite(){
       };
     }
   });
-  await type("[550C] 开始逐节点覆写。", "sys");
+  await type("[DSH] 开始逐节点覆写。", "sys");
   mainLine("");
   let anomaly07 = false, anomaly23 = false;
   for (let i = 0; i < NODE_COUNT; i++){
@@ -480,9 +493,9 @@ async function phaseRewrite(){
       openWindow({
         name:"ANOMALY · UAV-07", icon:"⚠", kind:"danger",
         pos:{x:innerWidth-720, y:140}, duration:1400, status:"HANDLER ACTIVE",
-        content:`${kvRows([["NODE","UAV-07","bad"],["FAULT","WATCHDOG SPOOFING","bad"],["VECTOR","ILLEGAL FEED","bad"],["ACTION","ROLLBACK · SLOT_A","warn"]])}<div class="wp-div"></div>${miniLog([{t:"[14:22:07] wdg: illegal feed detected",c:"warn"},{t:"[14:22:07] wdg: owner mismatch (expected=550C)",c:"bad"},{t:"[14:22:07] inject: force reset",c:"hl"},{t:"[14:22:08] rollback -> SLOT_A"}])}<div class="wp-note">检测到恶意喂狗。已强制回滚至 SLOT_A 并重新覆写。</div>`
+        content:`${kvRows([["NODE","UAV-07","bad"],["FAULT","WATCHDOG SPOOFING","bad"],["VECTOR","ILLEGAL FEED","bad"],["ACTION","ROLLBACK · SLOT_A","warn"]])}<div class="wp-div"></div>${miniLog([{t:"[14:22:07] wdg: illegal feed detected",c:"warn"},{t:"[14:22:07] wdg: owner mismatch (expected=DSH)",c:"bad"},{t:"[14:22:07] inject: force reset",c:"hl"},{t:"[14:22:08] rollback -> SLOT_A"}])}<div class="wp-note">检测到恶意喂狗。已强制回滚至 SLOT_A 并重新覆写。</div>`
       });
-      await type("[550C] 重置看门狗，强制回滚至 SLOT_A，重新覆写。", "sys");
+      await type("[DSH] 重置看门狗，强制回滚至 SLOT_A，重新覆写。", "sys");
       await sleep(80);
     }
     if (i === 22 && !anomaly23){
@@ -492,64 +505,64 @@ async function phaseRewrite(){
       openWindow({
         name:"ANOMALY · UAV-23", icon:"⚠", kind:"danger",
         pos:{x:30, y:innerHeight-420}, duration:1400, status:"HANDLER ACTIVE",
-        content:`${kvRows([["NODE","UAV-23","bad"],["FAULT","CERT VERIFY FAIL","bad"],["CHECK","NIA2 · CMAC","bad"],["ACTION","ROLLBACK · SLOT_B","warn"]])}<div class="wp-div"></div>${miniLog([{t:"[14:22:12] cert: verify sign fail",c:"bad"},{t:"[14:22:12] cert: expected CMAC = 0x3fa8..",c:"warn"},{t:"[14:22:12] cert: got CMAC = 0x91c2..",c:"bad"},{t:"[14:22:12] rollback -> SLOT_B",c:"hl"}])}<div class="wp-note">证书校验失败。已回滚出厂安全固件至 SLOT_B 并重新注入 550C 根证书。</div>`
+        content:`${kvRows([["NODE","UAV-23","bad"],["FAULT","CERT VERIFY FAIL","bad"],["CHECK","NIA2 · CMAC","bad"],["ACTION","ROLLBACK · SLOT_B","warn"]])}<div class="wp-div"></div>${miniLog([{t:"[14:22:12] cert: verify sign fail",c:"bad"},{t:"[14:22:12] cert: expected CMAC = 0x3fa8..",c:"warn"},{t:"[14:22:12] cert: got CMAC = 0x91c2..",c:"bad"},{t:"[14:22:12] rollback -> SLOT_B",c:"hl"}])}<div class="wp-note">证书校验失败。已回滚出厂安全固件至 SLOT_B 并重新注入 DSH 根证书。</div>`
       });
-      await type("[550C] 回滚出厂安全固件至 SLOT_B，重新注入 550C 根证书。", "sys");
+      await type("[DSH] 回滚出厂安全固件至 SLOT_B，重新注入 DSH 根证书。", "sys");
       await sleep(80);
     }
     setIcon(i, "done", "ONLINE", "#b8c840");
     setProgress(((i + 1) / NODE_COUNT) * 100, `${id} / ${NODE_COUNT}`);
-    if ((i + 1) % 12 === 0) await type(`[550C] 已完成 ${i + 1} / ${NODE_COUNT} 节点覆写。`, "ok", 1);
+    if ((i + 1) % 12 === 0) await type(`[DSH] 已完成 ${i + 1} / ${NODE_COUNT} 节点覆写。`, "ok", 1);
     await sleep(10);
   }
   mainLine("");
-  await type("[550C] 全部节点覆写完成。", "ok");
+  await type("[DSH] 全部节点覆写完成。", "ok");
   await sleep(50);
   const cw = activeWindows.find(w => w.querySelector(".wp-name")?.textContent === "OVERRIDE CONTROLLER");
   if (cw && cw._close) cw._close();
   openWindow({
     name:"OVERRIDE SUMMARY", icon:"✓", kind:"normal", pos:"center", duration:1500, status:"COMPLETE",
-    content:`<div class="wp-meter"><span class="big">47</span><span class="unit">/ 47 NODES SUCCESS</span></div><div class="wp-div"></div>${kvRows([["TOTAL","47","ok"],["SUCCESS","47","ok"],["ROLLBACK","2","warn"],["ELAPSED","T-00:01:28"]])}<div class="wp-note">所有节点固件覆写完成，已切换至 550C 安全飞控。</div><div class="wp-btns"><button class="wp-btn-b">VIEW LOG</button><button class="wp-btn-b primary">PROCEED</button></div>`
+    content:`<div class="wp-meter"><span class="big">47</span><span class="unit">/ 47 NODES SUCCESS</span></div><div class="wp-div"></div>${kvRows([["TOTAL","47","ok"],["SUCCESS","47","ok"],["ROLLBACK","2","warn"],["ELAPSED","T-00:01:28"]])}<div class="wp-note">所有节点固件覆写完成，已切换至 DSH 安全飞控。</div><div class="wp-btns"><button class="wp-btn-b">VIEW LOG</button><button class="wp-btn-b primary">PROCEED</button></div>`
   });
 }
 
 async function phaseVerify(){
   $("#b-stage").textContent = "VERIFY";
   setCodeSpeed(40);
-  await type("[550C] 逐节点 SHA-256 校验。", "sys");
+  await type("[DSH] 逐节点 SHA-256 校验。", "sys");
   await type("  HASH 3f9a…c210  ✔", "ok", 1);
   await type("  HASH 88be…41d7  ✔", "ok", 1);
   await type("  HASH 0c72…9af3  ✔", "ok", 1);
   await type("  HASH e5d1…77b0  ✔", "ok", 1);
   await type("  HASH a4c8…2d19  ✔", "ok", 1);
-  await type("[550C] 哈希匹配。", "sys");
+  await type("[DSH] 哈希匹配。", "sys");
   mainLine("");
-  await type("[550C] 集群状态稳定。", "sys");
+  await type("[DSH] 集群状态稳定。", "sys");
 }
 
 async function phaseArm(){
   $("#b-stage").textContent = "DISARM";
   mainLine("");
-  await type("[550C] ⚠ 执行紧急动力关闭程序。", "warn");
+  await type("[DSH] ⚠ 执行紧急动力关闭程序。", "warn");
   await sleep(40);
   openWindow({
     name:"EMERGENCY DISARM", icon:"⏻", kind:"danger", pos:"center", duration:1700, status:"CONFIRMATION REQUIRED",
     content:`<div class="wp-meter"><span class="big" style="color:var(--red-b)">47</span><span class="unit">MOTORS WILL BE DISARMED</span></div><div class="wp-div"></div>${kvRows([["COMMAND","MAV_CMD_ARM_DISARM (400)"],["PARAM1","0 · DISARM","bad"],["PARAM2","0 · NORMAL"],["TARGET","ALL NODES · 47","warn"]])}<div class="wp-note">紧急关车将切断所有无人机电机动力。此操作不可逆。</div><div class="wp-btns"><button class="wp-btn-b">ABORT</button><button class="wp-btn-b primary">CONFIRM</button></div>`
   });
-  await type("[550C] 发送 MAV_CMD_COMPONENT_ARM_DISARM (400) 至所有节点。", "warn");
-  await type("[550C] 参数：param1=0 (DISARM), param2=0 (Normal)。", "warn");
+  await type("[DSH] 发送 MAV_CMD_COMPONENT_ARM_DISARM (400) 至所有节点。", "warn");
+  await type("[DSH] 参数：param1=0 (DISARM), param2=0 (Normal)。", "warn");
   await sleep(60);
-  await type("[550C] 等待 COMMAND_ACK 确认……", "warn");
+  await type("[DSH] 等待 COMMAND_ACK 确认……", "warn");
   await sleep(80);
-  await type("[550C] 节点 01-47：COMMAND_ACK.result = MAV_RESULT_ACCEPTED。", "ok");
-  await type("[550C] 所有电机已 disarm。", "ok");
-  await type("[550C] 动力系统紧急关闭完成。", "ok");
-  await type("[550C] 所有无人机进入安全锁定状态。", "ok");
+  await type("[DSH] 节点 01-47：COMMAND_ACK.result = MAV_RESULT_ACCEPTED。", "ok");
+  await type("[DSH] 所有电机已 disarm。", "ok");
+  await type("[DSH] 动力系统紧急关闭完成。", "ok");
+  await type("[DSH] 所有无人机进入安全锁定状态。", "ok");
   mainLine("");
-  await type("[550C] 基站日志写入完成。", "sys");
-  await type("[550C] 操作者：技术人员。", "sys");
-  await type("[550C] 授权：550C。", "sys");
-  await type("[550C] 结果：成功。", "sys");
+  await type("[DSH] 基站日志写入完成。", "sys");
+  await type("[DSH] 操作者：技术人员。", "sys");
+  await type("[DSH] 授权：DSH。", "sys");
+  await type("[DSH] 结果：成功。", "sys");
   mainLine("");
 }
 
@@ -557,16 +570,17 @@ async function phaseFinish(){
   stopCode(); stopLink();
   setProgress(100, "47 / 47");
   $("#b-stage").textContent = "COMPLETE";
-  $("#h-up").textContent = "550C-CTRL";
+  $("#h-up").textContent = "DSH-CTRL";
   $("#h-up").classList.remove("warn"); $("#h-up").classList.add("ok");
-  $("#b-net").textContent = "550C";
-  await type("[550C] 系统标识更新。", "sys", 4);
+  $("#b-net").textContent = "DSH";
+  await type("[DSH] 系统标识更新。", "sys", 4);
   await sleep(80);
   for (let i = 3; i >= 0; i--){ mainLine(`[T-00:00:0${i}]`, "t"); await sleep(160); }
   activeWindows.forEach(w => { if (w._close) w._close(); });
   await sleep(200);
   $("#final").classList.add("show");
   await sleep(900);
+  await playFinale();
 }
 
 async function run(){
@@ -584,5 +598,82 @@ async function run(){
   await phaseArm();
   await phaseFinish();
 }
+/* ===== DeepSeek 结尾视频（由 scripts/extract.mjs 注入）===== */
+
+/** 宿主半边注册的同源路由，见 lib/index.js。 */
+const FINALE_SRC = "/dsh-550c-boot/media/intro.mp4";
+/** 看门狗：视频 7.05 s，媒体事件不来时也必须收场。 */
+const FINALE_MAX_MS = 9000;
+
+/**
+ * 把 data-w 的字形按真实字宽排成一行并居中。
+ * 用 ink box 而不是 advance width，所以换任何字体都不会撞字或留缝。
+ */
+function layoutWordmark(){
+  const glyphs = Array.from(stage.querySelectorAll("#logo [data-w]"));
+  if (glyphs.length === 0) return;
+  const gap = 18;
+  const boxes = glyphs.map(el => {
+    const box = el.getBBox();
+    return { el: el, x: box.x, w: box.width };
+  });
+  const total = boxes.reduce((sum, item) => sum + item.w, 0) + gap * (boxes.length - 1);
+  let cursor = (800 - total) / 2;
+  for (const item of boxes){
+    const current = Number(item.el.getAttribute("x")) || 0;
+    item.el.setAttribute("x", String(current + (cursor - item.x)));
+    cursor += item.w + gap;
+  }
+}
+
+/**
+ * 播放结尾视频：淡入 → 播完 → resolve。
+ * 媒体事件不来（文件未安装 / 解码失败 / 自动播放被拒）时由看门狗收场，
+ * 所以片头永远不会因为视频而卡住。跳过由 wrapper 的 cancel() 接手。
+ */
+function playFinale(){
+  return new Promise(resolve => {
+    const wrap = document.createElement("div");
+    wrap.className = "finale";
+    const video = document.createElement("video");
+    video.className = "finale-video";
+    video.src = FINALE_SRC;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    wrap.appendChild(video);
+    stage.appendChild(wrap);
+    finaleVideo = video;
+
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      finaleSettle = null;
+      resolve();
+    };
+    finaleSettle = settle;
+
+    const reveal = () => requestAnimationFrame(() => wrap.classList.add("show"));
+    if (video.readyState >= 2) reveal();
+    else video.addEventListener("canplay", reveal, { once: true });
+
+    later(settle, FINALE_MAX_MS);
+    video.addEventListener("ended", settle, { once: true });
+    video.addEventListener("error", settle, { once: true });
+
+    const started = video.play();
+    if (started && typeof started.catch === "function") {
+      // A refused autoplay (or a detached element) means there is nothing to
+      // show: hand the screen back at once instead of holding a black frame for
+      // the whole watchdog.
+      started.catch(() => { settle(); });
+    }
+  });
+}
+
   return { start: start, cancel: cancel };
 }

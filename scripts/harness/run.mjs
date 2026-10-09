@@ -256,11 +256,11 @@ const EXPECT = {
   // exact strings a user reads, so a wording change has to be deliberate.
   'settings rows · rendered text': {
     'rows.ids': 'boot-550c,boot-550c-scheme,boot-550c-update',
-    'rows.mode.title': '550C 开机动画',
-    'rows.mode.desc': '启动时播放 550C 片头；完整模式可用点击或 Esc 跳过。',
+    'rows.mode.title': 'DeepSeek 开机动画',
+    'rows.mode.desc': '启动时播放 DeepSeek 片头；完整档走完覆写流程后播放赛博片头，点击或 Esc 可跳过。',
     'rows.mode.buttons': '关闭,简易,完整,预览',
     'rows.scheme.desc': '琥珀是原作的配色，也是默认值。',
-    'rows.versionIdle.desc': /^当前 v\d+\.\d+\.\d+，从 npm 查询最新版本。$/,
+    'rows.versionIdle.desc': /^当前 v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?，从 npm 查询最新版本。$/,
     'rows.versionIdle.buttons': '检查更新',
     'rows.versionCurrent.note': /^已是最新 v\d+\.\d+\.\d+。打开 npm 页面$/,
     'rows.versionDesktop.note': '有新版本 v9.9.9。在 设置 → 插件 里装 dsh-550c-boot@latest，然后重启。复制包名',
