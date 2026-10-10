@@ -7,9 +7,11 @@ It plays on every client start, fades out when it finishes, and reveals the real
 
 > **This repository is a fork of [yannicksong0106/dsh-550c-boot](https://github.com/yannicksong0106/dsh-550c-boot).**
 > The upstream plugin engineering, the animation port, the docs and the verification scaffolding are all kept
-> and credited as they were; this branch only changes the branding and adds a closing video.
-> The package is still named `dsh-550c-boot` — it doubles as the localStorage key, the route prefix and the
-> plugin entry id, so renaming it would break an already-installed profile.
+> and credited as they were; this branch changes the branding, adds a closing video, and **renames the project
+> itself to `dsh-boot-deepseek`** — `dsh-550c-boot` now appears only as the *upstream project* (fork notice,
+> credits, upstream release history). Routes, DOM classes, the first-frame handshake and the plugin entry id
+> moved with it. The old localStorage keys (`dsh-550c-boot:mode` / `:scheme`) are still **read** as a fallback,
+> so an already-chosen mode survives the rename.
 
 ![Full mode: 47 nodes rewritten one by one](docs/preview-full.png)
 
@@ -49,7 +51,7 @@ Settings → General → **DeepSeek 开机动画**. A **Preview** button replays
 | **Off** | — | nothing is painted at all |
 
 Palettes: **amber** (default, the original CRT palette — not a single token is overridden), green (P1),
-cyan, white (P4). Preferences live in `localStorage` (`dsh-550c-boot:mode`).
+cyan, white (P4). Preferences live in `localStorage` (`dsh-boot-deepseek:mode`).
 
 ![Simple mode](docs/preview-simple.png)
 ![Cyan palette](docs/preview-cyan.png)
@@ -79,6 +81,6 @@ cyan, white (P4). Preferences live in `localStorage` (`dsh-550c-boot:mode`).
 The animation and its HTML source were provided by **Voidpoket** ([@Voidpoket](https://github.com/Voidpoket));
 the plugin engineering and port are by **Ziyang Song** ([@yannicksong0106](https://github.com/yannicksong0106)).
 See [CREDITS.md](CREDITS.md). This branch is a fork of their
-[dsh-550c-boot](https://github.com/yannicksong0106/dsh-550c-boot) and keeps their MIT terms.
+[dsh-boot-deepseek](https://github.com/yannicksong0106/dsh-550c-boot) and keeps their MIT terms.
 
 [MIT](LICENSE) © 2026 Ziyang Song · fork modifications by [@Yuanqingyuang](https://github.com/Yuanqingyuang)

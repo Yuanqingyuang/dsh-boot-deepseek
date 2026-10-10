@@ -577,7 +577,7 @@ async function run(){
 /* ===== DeepSeek 结尾视频（由 scripts/extract.mjs 注入）===== */
 
 /** 宿主半边注册的同源路由，见 lib/index.js。 */
-const FINALE_SRC = "/dsh-550c-boot/media/intro.mp4";
+const FINALE_SRC = "/dsh-boot-deepseek/media/intro.mp4";
 /** 看门狗：视频 7.05 s，媒体事件不来时也必须收场。 */
 const FINALE_MAX_MS = 9000;
 

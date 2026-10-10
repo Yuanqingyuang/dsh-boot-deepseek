@@ -46,11 +46,11 @@
   }
 
   function describe(tree) {
-    var note = findByClass(tree, 'dsh550c-note')
-    var desc = findByClass(tree, 'dsh550c-row-desc')
+    var note = findByClass(tree, 'dsh-deepseek-note')
+    var desc = findByClass(tree, 'dsh-deepseek-row-desc')
     var buttons = buttonsOf(tree)
     return {
-      title: textOf(findByClass(tree, 'dsh550c-row-title')),
+      title: textOf(findByClass(tree, 'dsh-deepseek-row-title')),
       desc: textOf(desc),
       note: note === null ? null : textOf(note),
       buttons: buttons
@@ -67,7 +67,7 @@
     }
   }
 
-  window.__dsh550cRows = {
+  window.__dshDeepseekRows = {
     /**
      * @param options.exports  what the module factory returned (apply lives there)
      * @param options.React    the same shim the factory was given
@@ -134,14 +134,14 @@
       }
 
       var report = { ids: Object.keys(rows).join(String.fromCharCode(44)) }
-      var mode = renderer(rows['boot-550c'])
+      var mode = renderer(rows['boot-deepseek'])
       report.mode = describe(mode.draw())
       delete report.mode._checkButton
-      var scheme = renderer(rows['boot-550c-scheme'])
+      var scheme = renderer(rows['boot-deepseek-scheme'])
       report.scheme = describe(scheme.draw())
       delete report.scheme._checkButton
 
-      var version = renderer(rows['boot-550c-update'])
+      var version = renderer(rows['boot-deepseek-update'])
       report.versionIdle = describe(version.draw())
       delete report.versionIdle._checkButton
 

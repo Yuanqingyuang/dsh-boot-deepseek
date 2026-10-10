@@ -14,8 +14,10 @@
 **Ziyang Song**（[@yannicksong0106](https://github.com/yannicksong0106)）完成。详见 [CREDITS.md](CREDITS.md)。
 
 > **本仓库是 [yannicksong0106/dsh-550c-boot](https://github.com/yannicksong0106/dsh-550c-boot) 的定制分支（fork）。**
-> 上游的插件工程、动画移植、文档与验证脚手架全部保留并按其原样署名；本分支只改品牌与片尾。
-> 包名仍叫 `dsh-550c-boot`——它同时是 localStorage 键、路由前缀与插件入口 id，改名会破坏已装好的 profile。
+> 上游的插件工程、动画移植、文档与验证脚手架全部保留并按其原样署名；本分支改品牌、换片尾声，
+> 并把**自身名称统一为 `dsh-boot-deepseek`** —— `dsh-550c-boot` 从此只作为**上游项目**出现
+> （fork 声明、署名、上游发布历史）。路由前缀、DOM 类名、全局握手与插件入口 id 一并对齐；
+> 旧 localStorage 键 `dsh-550c-boot:mode` / `:scheme` 仍会被**读取**兜底，已选好的档位不会丢。
 
 > **本分支改了什么**
 >
@@ -28,7 +30,7 @@
 >   操作者提示等共 77 处，写在 `scripts/extract.mjs` 的第 13 条定点改写里（带数量断言）。
 > - **完整档**在 `SYSTEM IS REWRITTEN` 之后追加播放 `lib/media/intro.mp4`（DeepSeek 赛博片头，
 >   7.05 s / **3840×2160** / H.264+AAC，静音自动播放），由宿主半边经同源路由
->   `/dsh-550c-boot/media/intro.mp4` 送出（支持 Range）。完整档因此约 18 s；简易档约 3 s。
+>   `/dsh-boot-deepseek/media/intro.mp4` 送出（支持 Range）。完整档因此约 18 s；简易档约 3 s。
 > - 版本号 `0.4.0-deepseek.1`：故意高于 npm 上的 `0.3.3`，避免设置里的「检查更新 → 立即更新」
 >   把这份定制覆盖回上游原版。
 > - 改动全部落在 `scripts/extract.mjs` 的定点改写里（第 9–13 条，每条都写了原因），
@@ -72,7 +74,7 @@ DSH 的客户端 bundle 带 `max-age=31536000, immutable`，而 URL 上的 `rev`
 
 - 动画**播完才渐出**，不等软件加载状态；无论 DSH 是否早已就绪都会完整播完
 - 完整档下**点击画面或按 `Esc`** 跳过
-- 偏好存在浏览器 `localStorage`（键 `dsh-550c-boot:mode`），与已装的第三方设置行做法一致
+- 偏好存在浏览器 `localStorage`（键 `dsh-boot-deepseek:mode`），与已装的第三方设置行做法一致
 - 每次客户端加载都会播（刷新页面也算）；「每个会话只播一次」需要额外去重，目前故意不做
 - 片头播放期间，桌面窗口右上角那几个原生按钮**浮在动画上**（条带透明、符号用当前配色），
   窗口顶部 40px 仍可拖动窗口；片头结束自动还原
@@ -86,13 +88,13 @@ DSH 自身没有插件更新入口，所以通用设置里多了一行 **版本�
   失败再退官方源，响应里带上来源（实测这台机器镜像 160ms、官方 2078ms）；缓存 5 分钟，
   两个源都问不到就直说问不到。只有按下按钮才会联网。
 - **立即更新**（`web` 等 profile）：由宿主调用 DSH CLI 执行
-  `plugin --profile <当前 profile> add dsh-550c-boot@latest` —— 唯一受支持的改 profile 方式 ——
+  `plugin --profile <当前 profile> add dsh-boot-deepseek@latest` —— 唯一受支持的改 profile 方式 ——
   把 CLI 输出原样回报，然后提示重启客户端生效。
 - **桌面端走提示词**：`dsh plugin` 硬编码拒绝 `desktop`（Electron 应用独占管理该 profile），
-  所以那里不给「立即更新」，而是显示「在 设置 → 插件 里安装 `dsh-550c-boot@latest`，然后重启」
+  所以那里不给「立即更新」，而是显示「在 设置 → 插件 里安装 `dsh-boot-deepseek@latest`，然后重启」
   加一个复制包名按钮。
 
-两个请求都走宿主半边的同源路由（`GET /dsh-550c-boot/update`、`POST /dsh-550c-boot/update/apply`）：
+两个请求都走宿主半边的同源路由（`GET /dsh-boot-deepseek/update`、`POST /dsh-boot-deepseek/update/apply`）：
 页面 CSP 很紧，而宿主进程本来就管出网。
 
 ### 配色

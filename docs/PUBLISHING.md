@@ -1,6 +1,6 @@
 # 发布 / 收录清单
 
-**当前状态（2026-09-28）**：仓库已公开并推上 GitHub（`yannicksong0106/dsh-550c-boot`，topic 含
+**当前状态（2026-09-28）**：仓库已公开并推上 GitHub（`Yuanqingyuang/dsh-boot-deepseek`，topic 含
 `dsh-plugin`），CI 全绿；v2 投稿 Issue 已开：
 [omdsh-dev/dsh-hub-workshop#169](https://github.com/omdsh-dev/dsh-hub-workshop/issues/169)
 （钉 `ed86fb0e…`）。Hub 的 bot 回了"预检未通过"，但**失败点在它们仓库侧**——`prepare-issue-intake.mjs`
@@ -13,15 +13,15 @@ Issue 正文（或留一条评论）就会重新触发 `intake` 工作流，无�
 
 | 路径 | 谁在用 | 需要什么 |
 |---|---|---|
-| **GitHub 直装** | `dsh plugin --profile <p> add github:yannicksong0106/dsh-550c-boot` | 公开仓库 + 提交好的构建产物（`lib/`），无需构建授权 |
+| **GitHub 直装** | `dsh plugin --profile <p> add github:Yuanqingyuang/dsh-boot-deepseek` | 公开仓库 + 提交好的构建产物（`lib/`），无需构建授权 |
 | **awesome-dsh-plugin**（[awesome-dsh-plugin.com](https://awesome-dsh-plugin.com)） | 社区精选列表 / 站点 | PR 加一个文件 `data/plugins/<owner>__<repo>.yml`；门槛：`dsh.bundle` + `dsh-plugin` topic + **仓库满 1 天**（CI 自动查） |
 | **dsh-market 社区索引**（[dsh-market.com](https://dsh-market.com)） | 创意工坊商店 | PR 往 `zhu1090093659/dsh-community-plugins` 的 `community.json` 追加一条 |
 | **OMDSH Hub（hub.omdsh.dev）插件区域** | 应用内插件市场 / 索引站 | `package.json#dshWorkshop`（`omdsh-workshop-package/v1`）+ 固定 40 位 commit 的 v2 投稿 Issue |
-| **npm**（可选，但市场按包名安装需要） | `dsh plugin --profile <p> add dsh-550c-boot` | `npm publish`（`publishConfig.access: public` 已就位） |
+| **npm**（可选，但市场按包名安装需要） | `dsh plugin --profile <p> add dsh-boot-deepseek` | `npm publish`（`publishConfig.access: public` 已就位） |
 
 ## awesome-dsh-plugin 的投稿文件
 
-投稿文件**跟代码放在一起**（`submission/data/plugins/yannicksong0106__dsh-550c-boot.yml`），
+投稿文件**跟代码放在一起**（`submission/data/plugins/yannicksong0106__dsh-boot-deepseek.yml`），
 这样它随仓库版本化，不会和实际能力脱节；提 PR 时把它复制到列表仓的同名路径即可。
 entry 允许的键只有 `url` / `name` / `category` / `description` / `tarball` / `file`——
 **`npm` 不许写**（列表自己从仓库解析 npm 包名），`tarball` 必须是 GitHub Release 上的 `.tgz`。
@@ -51,14 +51,14 @@ entry 允许的键只有 `url` / `name` / `category` / `description` / `tarball`
 ## 1. 推到 GitHub
 
 ```sh
-git remote add origin git@github.com:yannicksong0106/dsh-550c-boot.git
+git remote add origin git@github.com:Yuanqingyuang/dsh-boot-deepseek.git
 git push -u origin main
 ```
 
 然后给仓库加上 topic（索引站按 topic 抓，`dsh-plugin` 是硬要求）：
 
 ```sh
-gh repo edit yannicksong0106/dsh-550c-boot \
+gh repo edit Yuanqingyuang/dsh-boot-deepseek \
   --add-topic dsh-plugin,deepseek-harness,dsh,dsh-extension,boot-splash \
   --description "550C 开机动画 for DeepSeek Harness — 首帧由宿主半边注入，DSH 的 Loading 卡片不会露脸；桌面窗口的原生按钮收编成终端配色"
 ```
@@ -97,7 +97,7 @@ gh repo edit yannicksong0106/dsh-550c-boot \
    ```
 
 4. 校验通过后，在 `omdsh-dev/dsh-hub-workshop` 开一个 Issue：
-   标题 `[Submission] dsh-550c-boot@0.1.0`，正文按模板粘贴完整清单 + 三条确认。
+   标题 `[Submission] dsh-boot-deepseek@0.1.0`，正文按模板粘贴完整清单 + 三条确认。
    自动化会只读核验仓库/commit/声明路径，然后由 bot 开出 `pending-review` PR —— **不会**执行仓库脚本、
    也**不会**批准项目。
 
@@ -113,7 +113,10 @@ gh repo edit yannicksong0106/dsh-550c-boot \
 | 权限 | `web:index-inject` / `dom:overlay` / `browser:local-storage` / `desktop:titlebar-overlay` | 逐条对应真实行为：注入 index 行、挂遮罩、存偏好、改标题栏 token |
 | 失败隔离 / 热重载 | `dispose: supported`，`activation: restart-profile` | bundle 层是启动时装配的，装完必须重启 DSH（README 已写） |
 
-## 3. npm（已发布）
+## 3. npm（上游已发布；本 fork 未发布）
+
+> 这一段记的是**上游**的发布情况。本 fork 的包名是 `dsh-boot-deepseek`，**没有**发布到 npm，
+> 所以设置行里的「检查更新」查不到任何东西（它会直说问不到），「打开仓库页面」指向本仓库。
 
 `dsh-550c-boot@0.2.0` 于 2026-09-30 发布到 npm（`https://www.npmjs.com/package/dsh-550c-boot`），
 发布后 `dsh plugin --profile web add dsh-550c-boot` 就能按包名安装；市场里的"按名安装"走的是这条路，

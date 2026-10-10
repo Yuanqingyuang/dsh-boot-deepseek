@@ -62,9 +62,10 @@ const submission = {
   operation: 'create-project',
   project: {
     id: pkg.name,
-    displayName: '550C 开机动画 / 550C boot splash',
+    displayName: 'DeepSeek 开机动画 / DSH boot splash',
     summary:
-      '启动 DSH 时全屏播放 550C 片头（简易 4s / 完整 16s，可跳过，四套磷光配色）。首帧由宿主半边注入，' +
+      '启动 DSH 时全屏播放开机片头：Orbitron 字标自我书写（简易约 3s），' +
+      '或走完覆写全流程再接 4K 片尾视频（完整约 18s），可跳过，四套磷光配色。首帧由宿主半边注入，' +
       "DSH 自己的 Loading 卡片不会露脸；桌面窗口的原生标题栏按钮会被收编成终端配色。",
     kind: 'ui',
     category: 'interface',
@@ -110,12 +111,12 @@ const submission = {
   management: {
     method: 'profile-bundle',
     protocol: workshop.integration?.protocol ?? 'harness-profile',
-    label: '550C 开机动画',
+    label: 'DeepSeek 开机动画',
     instructions:
       'dsh plugin --profile <profile> add github:' +
       `${slug}#${ref}` +
       '\n装完重启一次 DSH（bundle 层在启动时装配）；升级后在新窗口 Ctrl+Shift+R 硬刷新。' +
-      '\n模式开关在 设置 → 通用 → 550C 开机动画。',
+      '\n模式开关在 设置 → 通用 → DeepSeek 开机动画。',
     // Null for this route on purpose: the submission schema only carries a
     // `source` coordinate for `repository-plugin` (github:owner/repo), and
     // rejects a non-null one for a `profile-bundle`. The pinned coordinate for
@@ -126,7 +127,7 @@ const submission = {
     permissions:
       '权限：web:index-inject（向 index 响应注入一条 style + 一条同步 script，即首帧）；' +
       'dom:overlay（在 document.body 挂全屏 shadow DOM 遮罩，含一张 <style> 与一个 caption 换色样式表）；' +
-      'browser:local-storage（dsh-550c-boot:mode / :scheme 两个偏好）；' +
+      'browser:local-storage（dsh-boot-deepseek:mode / :scheme 两个偏好）；' +
       'desktop:titlebar-overlay（改写 --dsw-specific-sidebar-fill 与 --dsw-alias-label-primary，' +
       '桌面 preload 会据此重设 Electron 标题栏叠层颜色）。' +
       '无网络请求、无文件系统访问、无子进程、无安装期脚本、无外部副作用。',

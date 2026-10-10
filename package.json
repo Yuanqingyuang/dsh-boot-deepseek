@@ -1,7 +1,7 @@
 {
-  "name": "dsh-550c-boot",
-  "version": "0.4.0-deepseek.1",
-  "description": "DeepSeek 开机动画：启动 DSH 时逐笔书写 DeepSeek 字标，完整档走完覆写流程后在结尾播放 DeepSeek 赛博片头；通用设置里可切换或关闭。",
+  "name": "dsh-boot-deepseek",
+  "version": "0.5.0",
+  "description": "DeepSeek 开机动画：启动 DSH 时以 Orbitron 字标自我书写开场，完整档走完覆写流程后在结尾播放 4K 赛博片头；通用设置里可切换或关闭。",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
@@ -114,7 +114,7 @@
     "capability": {
       "id": "boot-splash",
       "kind": "ui",
-      "invocation": "Boot the profile's Web GUI, then read the first frame from the page: document.querySelector('.dsh550c-host') and its shadowRoot's #boot stage, plus document.documentElement.classList.contains('dsh550c-first') on the way in.",
+      "invocation": "Boot the profile's Web GUI, then read the first frame from the page: document.querySelector('.dsh-deepseek-host') and its shadowRoot's #boot stage, plus document.documentElement.classList.contains('dsh-deepseek-first') on the way in.",
       "expected": "The host half's first frame covers the shell while the document is still parsing, so DSH's [data-dsh-boot] card is never visible; the client splash then mounts the ported #boot stage in a shadow root on the same task that retires that cover, and plays to completion."
     },
     "evidence": {

@@ -346,7 +346,7 @@ const FINALE_FUNCTIONS = `
 /* ===== DeepSeek 结尾视频（由 scripts/extract.mjs 注入）===== */
 
 /** 宿主半边注册的同源路由，见 lib/index.js。 */
-const FINALE_SRC = "/dsh-550c-boot/media/intro.mp4";
+const FINALE_SRC = "/dsh-boot-deepseek/media/intro.mp4";
 /** 看门狗：视频 7.05 s，媒体事件不来时也必须收场。 */
 const FINALE_MAX_MS = 9000;
 
@@ -532,7 +532,7 @@ const banner = (name, note) =>
 const assetsOut =
   banner('assets', 'stylesheet + markup extracted from the original page') +
   `const FONT_FACE_CSS = ${JSON.stringify(fontFaceCss)};\n\n` +
-  `const CSS_550C = ${JSON.stringify(css)};\n\n` +
+  `const SPLASH_CSS = ${JSON.stringify(css)};\n\n` +
   `const BOOT_MARKUP = ${JSON.stringify(bootMarkup)};\n\n` +
   `const APP_MARKUP = ${JSON.stringify(appMarkupRebranded)};\n`
 

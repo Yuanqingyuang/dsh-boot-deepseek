@@ -2,6 +2,29 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)；版本号用 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.5.0] - 2026-10-09
+
+**改名**：本项目的**自身名称**统一为 `dsh-boot-deepseek`，`dsh-550c-boot` 从此只作为**上游项目**出现
+（fork 声明、署名、上游发布历史）。上一版的 `0.4.0-deepseek.1` 是为了压过上游 npm 版本号而取的临时
+版本，改名后不再需要，回归正常语义化版本。
+
+### 变更
+
+- 包名 `dsh-550c-boot` → `dsh-boot-deepseek`；插件入口 id `boot-550c` → `boot-deepseek`
+- 路由前缀 `/dsh-550c-boot/*` → `/dsh-boot-deepseek/*`（媒体路由与两条更新路由）
+- DOM 前缀 `dsh550c-*` / `data-dsh550c-boot` → `dsh-deepseek-*` / `data-dsh-deepseek-boot`
+- 全局握手 `__dsh550cFirstFrame` / `__dsh550cVersion` → `__dshDeepseekFirstFrame` / `__dshDeepseekVersion`
+- 套件环境变量 `DSH_550C_PAGE` / `DSH_550C_BROWSER` → `DSH_DEEPSEEK_PAGE` / `DSH_DEEPSEEK_BROWSER`
+- 生成常量 `CSS_550C` → `SPLASH_CSS`；localStorage 键 → `dsh-boot-deepseek:mode` / `:scheme`
+- 设置行「打开 npm 页面」→「打开仓库页面」，指向本仓库（本 fork 没有发布到 npm）
+
+### 兼容
+
+- **旧 localStorage 键仍被读取兜底**（`dsh-550c-boot:mode` / `:scheme`）：改名不会静默重置已选好的
+  档位与配色，写入只写新键。这是全仓唯一仍然出现旧名字的地方，且是刻意保留的。
+- `assets/550C-source.html` 与 `submission/` 下的两个投稿元数据**保持原样**：它们是上游的原件，
+  不是本项目的自称（`submission/README.md` 已说明）。
+
 ## [0.4.0-deepseek.1] - 2026-10-09
 
 本分支（**fork**，见 [CREDITS.md](CREDITS.md)）的第一版：只改品牌与片尾，上游的动画、工程、文档与

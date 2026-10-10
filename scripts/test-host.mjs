@@ -183,7 +183,7 @@ console.log('\nprofile handling')
   check('web profile may be updated by the host', web.canApply === true && web.profile === 'web', JSON.stringify(web))
   const command = installCommand('web')
   check('install argv targets the CLI', String(command.args[0]).endsWith('dsh/lib/bin.js'), String(command.args[0]))
-  check('install argv adds the package at latest', command.args.join(' ') === `${command.args[0]} plugin --profile web add dsh-550c-boot@latest`, command.args.join(' '))
+  check('install argv adds the package at latest', command.args.join(' ') === `${command.args[0]} plugin --profile web add dsh-boot-deepseek@latest`, command.args.join(' '))
 
   process.env.DSH_PROFILE = 'desktop'
   const desktop = profileInfo()
@@ -213,7 +213,7 @@ console.log('\nupdate route')
   check('newer version -> outdated', payload.state === 'outdated' && payload.latest === '9.9.9', JSON.stringify(payload))
   check('names the source registry', payload.source === 'npmmirror')
   check('reports the running version', typeof payload.current === 'string' && payload.current.length > 0)
-  check('points at the npm page', String(payload.url).includes('npmjs.com/package/dsh-550c-boot'))
+  check('points at the npm page', String(payload.url).includes('npmjs.com/package/dsh-boot-deepseek'))
   check('no-store', probe.out.headers['cache-control'] === 'no-store')
 
   const { updateHandler: same } = load(bothRegistries('0.0.1', '0.0.1'))
@@ -408,7 +408,7 @@ console.log('\nplugin wiring')
   check('listens to webserver/index-inject', typeof injectHandler === 'function')
   injectHandler(table)
   check('injects style + script + global', table.map((row) => row.kind).join(',') === 'style,script,global', table.map((row) => row.kind).join(','))
-  check('global is __dsh550cVersion', table.find((row) => row.kind === 'global')?.name === '__dsh550cVersion')
+  check('global is __dshDeepseekVersion', table.find((row) => row.kind === 'global')?.name === '__dshDeepseekVersion')
   check('global carries a version', /^\d+\.\d+\.\d+/.test(String(table.find((row) => row.kind === 'global')?.value)))
   check('script row is head-placed', table.find((row) => row.kind === 'script')?.placement === 'head')
   check('cover css mentions the splash background', String(table[0].text).includes('#050403'))
@@ -417,9 +417,9 @@ console.log('\nplugin wiring')
   const paths = routes.map((route) => `${route.kind} ${route.path}`)
   check(
     'registers the finale video, the check and the update route',
-    paths.includes('exact /dsh-550c-boot/media/intro.mp4') &&
-      paths.includes('exact /dsh-550c-boot/update') &&
-      paths.includes('exact /dsh-550c-boot/update/apply'),
+    paths.includes('exact /dsh-boot-deepseek/media/intro.mp4') &&
+      paths.includes('exact /dsh-boot-deepseek/update') &&
+      paths.includes('exact /dsh-boot-deepseek/update/apply'),
     paths.join(', '),
   )
   check('every handler is a function', routes.every((route) => typeof route.handler === 'function'))

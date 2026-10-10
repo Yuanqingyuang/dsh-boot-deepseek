@@ -19,7 +19,7 @@
       const params = new URLSearchParams(location.search)
       const mode = params.get('mode') || 'simple'
       const next = params.get('next')
-      localStorage.setItem('dsh-550c-boot:mode', mode)
+      localStorage.setItem('dsh-boot-deepseek:mode', mode)
       document.body.textContent = 'seeded ' + mode
       if (next !== null) location.replace(next)
     </script>

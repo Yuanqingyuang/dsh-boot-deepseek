@@ -102,7 +102,7 @@ const CARD_FAILED =
 
 /* ── the index document under test ───────────────────────────────────── */
 // Preferred: the real @deepseek-ai/dsh-web-frontend dist document, lifted out of
-// app.asar by scripts/extract-asar.mjs (or pointed at with DSH_550C_PAGE). The
+// app.asar by scripts/extract-asar.mjs (or pointed at with DSH_DEEPSEEK_PAGE). The
 // assertions are much stronger against the real thing — it brings the shell's own
 // stylesheets, the boot card and the module loader.
 //
@@ -112,7 +112,7 @@ const EXTRACTED_PAGE = resolve(
   here,
   '../../.verify/asar/dsh__node_modules__@deepseek-ai__dsh-web-frontend__dist__index.html',
 )
-const pageSource = process.env.DSH_550C_PAGE ?? (existsSync(EXTRACTED_PAGE) ? EXTRACTED_PAGE : null)
+const pageSource = process.env.DSH_DEEPSEEK_PAGE ?? (existsSync(EXTRACTED_PAGE) ? EXTRACTED_PAGE : null)
 const usingRealPage = pageSource !== null
 const rawIndex = usingRealPage ? readFileSync(pageSource, 'utf8') : readFileSync(resolve(here, 'fallback.html'), 'utf8')
 const doctype = rawIndex.indexOf('<!doctype')
@@ -131,7 +131,7 @@ const HARNESS_SCRIPT = `
 (function () {
   var root = document.documentElement;
   var params = new URLSearchParams(location.search);
-  var report = { coverApplied: root.classList.contains('dsh550c-first') };
+  var report = { coverApplied: root.classList.contains('dsh-deepseek-first') };
 
   // ── the Desktop preload's caption probe, reproduced faithfully ───────────
   // (lib/types/preload-windows.js: an anonymous body-level span whose inline
@@ -168,13 +168,13 @@ const HARNESS_SCRIPT = `
   var coverAt = Number(params.get('coverAt') || 0);
   if (coverAt > 0) {
     window.setTimeout(function () {
-      write({ coverAfterWatch: root.classList.contains('dsh550c-first') });
+      write({ coverAfterWatch: root.classList.contains('dsh-deepseek-first') });
     }, coverAt);
     return;
   }
   function materialise() {
     var queue = (window.__ModuleLoader__ && window.__ModuleLoader__.pendingQueue) || [];
-    var registration = queue.filter(function (row) { return row.id === 'dsh-550c-boot'; })[0];
+    var registration = queue.filter(function (row) { return row.id === 'dsh-boot-deepseek'; })[0];
     report.registration = registration !== undefined;
     if (registration === undefined) { finish(); return; }
     // A recording React: the shim in scripts/harness/rows.js reads the element tree
@@ -202,10 +202,10 @@ const HARNESS_SCRIPT = `
     }
     // The rows only exist once the plugin is given a context — the factory alone
     // only mounts the splash — so run them here and report before the probe.
-    if (exports !== null && typeof exports.apply === 'function' && window.__dsh550cRows !== undefined) {
+    if (exports !== null && typeof exports.apply === 'function' && window.__dshDeepseekRows !== undefined) {
       var realFetch = window.fetch;
       try {
-        window.__dsh550cRows.run({
+        window.__dshDeepseekRows.run({
           exports: exports,
           React: React,
           setFetch: function (impl) { window.fetch = impl; },
@@ -224,7 +224,7 @@ const HARNESS_SCRIPT = `
     finish();
   }
   function finish() {
-    var host = document.querySelector('.dsh550c-host');
+    var host = document.querySelector('.dsh-deepseek-host');
     var hud = host === null ? null : host.shadowRoot.querySelector('#hud-top');
     var sheets = host === null ? [] : Array.prototype.slice.call(host.shadowRoot.querySelectorAll('style'));
     // MutationObserver callbacks are microtasks, so the shell's own re-measure
@@ -234,10 +234,10 @@ const HARNESS_SCRIPT = `
     write({
       registration: report.registration,
       overlayMounted: host !== null,
-      coverAfterModule: root.classList.contains('dsh550c-first'),
-      firstFrameGlobal: typeof window.__dsh550cFirstFrame,
+      coverAfterModule: root.classList.contains('dsh-deepseek-first'),
+      firstFrameGlobal: typeof window.__dshDeepseekFirstFrame,
       captionAttr: host === null ? null : host.getAttribute('data-caption'),
-      captionStyleInHead: document.getElementById('dsh-550c-boot-caption') !== null,
+      captionStyleInHead: document.getElementById('dsh-boot-deepseek-caption') !== null,
       captionFill: host === null ? null : getComputedStyle(host).getPropertyValue('--caption-fill').trim(),
       captionSymbol: host === null ? null : getComputedStyle(host).getPropertyValue('--caption-symbol').trim(),
       shadowBoot: host === null ? null : host.shadowRoot.querySelector('#boot') !== null,
@@ -255,7 +255,7 @@ const HARNESS_SCRIPT = `
       probeColor: measured.color,
       probeSends: measured.sends,
       // diagnostics: the plugin's sheet, and whether its selector reaches the probe
-      captionSheet: (document.getElementById('dsh-550c-boot-caption') || {}).textContent || null,
+      captionSheet: (document.getElementById('dsh-boot-deepseek-caption') || {}).textContent || null,
       probeSelectorMatches: document.querySelectorAll('body>span[style*="dsw-specific-sidebar-fill"]').length,
       probeIsBodyChild: probe.parentNode === document.body,
       // The app's own tokens must be left exactly as they were.
@@ -319,7 +319,7 @@ const DARWIN_SCRIPT = `
   }
   function materialise() {
     var queue = (window.__ModuleLoader__ && window.__ModuleLoader__.pendingQueue) || [];
-    var registration = queue.filter(function (row) { return row.id === 'dsh-550c-boot'; })[0];
+    var registration = queue.filter(function (row) { return row.id === 'dsh-boot-deepseek'; })[0];
     report.registration = registration !== undefined;
     if (registration === undefined) { finish(); return; }
     var React = {
@@ -339,10 +339,10 @@ const DARWIN_SCRIPT = `
     finish();
   }
   function finish() {
-    var host = document.querySelector('.dsh550c-host');
+    var host = document.querySelector('.dsh-deepseek-host');
     var shadow = host === null ? null : host.shadowRoot;
     var hud = shadow === null ? null : shadow.querySelector('#hud-top');
-    var guard = document.getElementById('dsh-550c-boot-host');
+    var guard = document.getElementById('dsh-boot-deepseek-host');
     var chrome = document.getElementById('chrome');
 
     // (a) with the plugin's drag-guard sheet, (b) without it (control), (c) restored
@@ -365,7 +365,7 @@ const DARWIN_SCRIPT = `
       appRegionRestored: restored,
       chromeAppRegion: appRegion(chrome),
       captionAttr: host === null ? null : host.getAttribute('data-caption'),
-      captionSheetInHead: document.getElementById('dsh-550c-boot-caption') !== null,
+      captionSheetInHead: document.getElementById('dsh-boot-deepseek-caption') !== null,
       hudPresent: hud !== null,
       hudPadLeft: hud === null ? null : getComputedStyle(hud).paddingLeft,
       hudWindowDrag: hud === null ? null : hud.hasAttribute('data-window-drag'),
@@ -383,7 +383,7 @@ const DARWIN_SCRIPT = `
     if (fs === 'late') {
       root.dataset.fullscreen = 'true';
       window.setTimeout(function () {
-        var live = document.querySelector('.dsh550c-host');
+        var live = document.querySelector('.dsh-deepseek-host');
         var liveShadow = live === null ? null : live.shadowRoot;
         var liveHud = liveShadow === null ? null : liveShadow.querySelector('#hud-top');
         snapshot.rootFullscreen = root.getAttribute('data-fullscreen');
@@ -396,7 +396,7 @@ const DARWIN_SCRIPT = `
     }
 
     window.setTimeout(function () {
-      write(Object.assign({ overlayGoneAfterClick: document.querySelector('.dsh550c-host') === null }, snapshot));
+      write(Object.assign({ overlayGoneAfterClick: document.querySelector('.dsh-deepseek-host') === null }, snapshot));
     }, 1200);
   }
   var delay = Number(params.get('delay') || 0);
@@ -449,8 +449,8 @@ const FAMILY_SCRIPT = `
   }
   function write(extra) {
     for (var key in extra) report[key] = extra[key];
-    report.overlayGoneAfterClick = document.querySelector('.dsh550c-host') === null;
-    report.dragBandGoneAfterClick = document.querySelector('.dsh550c-dragband') === null;
+    report.overlayGoneAfterClick = document.querySelector('.dsh-deepseek-host') === null;
+    report.dragBandGoneAfterClick = document.querySelector('.dsh-deepseek-dragband') === null;
     var probe = document.createElement('div');
     probe.id = 'probe';
     probe.textContent = JSON.stringify(report);
@@ -458,7 +458,7 @@ const FAMILY_SCRIPT = `
   }
   function materialise() {
     var queue = (window.__ModuleLoader__ && window.__ModuleLoader__.pendingQueue) || [];
-    var registration = queue.filter(function (row) { return row.id === 'dsh-550c-boot'; })[0];
+    var registration = queue.filter(function (row) { return row.id === 'dsh-boot-deepseek'; })[0];
     report.registration = registration !== undefined;
     if (registration === undefined) { write({}); return; }
     var React = {
@@ -475,13 +475,13 @@ const FAMILY_SCRIPT = `
     } catch (error) {
       report.materialiseError = String((error && error.message) || error);
     }
-    var host = document.querySelector('.dsh550c-host');
-    var band = document.querySelector('.dsh550c-dragband');
+    var host = document.querySelector('.dsh-deepseek-host');
+    var band = document.querySelector('.dsh-deepseek-dragband');
     var style = host === null ? null : getComputedStyle(host);
     var snapshot = {
       registration: report.registration,
       overlayMounted: host !== null,
-      markerIsOurs: host === null ? null : host.hasAttribute('data-dsh550c-boot'),
+      markerIsOurs: host === null ? null : host.hasAttribute('data-dsh-deepseek-boot'),
       borrowedFamilyMarker: host === null ? null : host.hasAttribute('data-dsh-boot-splash'),
       ariaHidden: host === null ? null : host.getAttribute('aria-hidden'),
       hostPointerEvents: style === null ? null : style.pointerEvents,
@@ -491,7 +491,7 @@ const FAMILY_SCRIPT = `
       dragBandPresent: band !== null,
       dragBandAppRegion: appRegion(band),
       dragBandMarker: band === null ? null : band.hasAttribute('data-window-drag'),
-      hostSheetInHead: document.getElementById('dsh-550c-boot-host') !== null
+      hostSheetInHead: document.getElementById('dsh-boot-deepseek-host') !== null
     };
     // The shield runs BEFORE the click on purpose: if it had reused the host it
     // would also have scheduled its removal, so the click below is the only thing

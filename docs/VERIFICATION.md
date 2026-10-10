@@ -19,8 +19,8 @@ npm run test:harness   # 浏览器里跑真实插件：15 个用例 / 54 条断�
 （`scripts/harness/render-rows.mjs`）套上**插件自己产出的行**，再用无头浏览器跑。
 
 拿不到真实页面时（新克隆、没装 DSH）会自动退回仓里的 `scripts/harness/fallback.html`：
-断言会弱一些，但套件仍然可跑 —— 这是把它提交进仓的意义。也可以用 `DSH_550C_PAGE=<path>` 指定页面、
-`DSH_550C_BROWSER=<path>` 指定浏览器；找不到任何浏览器时套件会**跳过并退出 0**，宿主测试才是硬门。
+断言会弱一些，但套件仍然可跑 —— 这是把它提交进仓的意义。也可以用 `DSH_DEEPSEEK_PAGE=<path>` 指定页面、
+`DSH_DEEPSEEK_BROWSER=<path>` 指定浏览器；找不到任何浏览器时套件会**跳过并退出 0**，宿主测试才是硬门。
 
 | 用例 | 断言 |
 |---|---|
@@ -79,7 +79,7 @@ node scripts/verify.mjs --url '…' --mode full  --at 3000 --skip       # 跳过
 | 结尾画面 | `--finale-shot` 在轮询中发现视频确实在播时自动抓帧（`.verify/shots/finale-live.png`），确认 `object-fit:cover` 铺满 |
 | 视频中跳过 | `full @14000ms --skip`：跳过前 `videoBefore={t:3.47, paused:false}`，Esc 后 900ms `hostAfterEsc=false` —— 取消链路会暂停视频并结算 promise，不会卡到 30s 看门狗 |
 | 宿主媒体路由 | `npm test` 新增 15 条：200 全长 / 206 三种 range（`4-7`、`8-`、`-4`）/ 416 / 404（资产缺失）/ 405 / HEAD 无 body / 只读一次并缓存 / 换片后重读 / 未变仍缓存 |
-| 已安装的那一份 | 从 `profiles/desktop/node_modules/dsh-550c-boot`（junction）导入宿主半边并直接驱动：HEAD `200 video/mp4`、GET 同长、`bytes=0-99` 回 `206 …/<总长>` |
+| 已安装的那一份 | 从 `profiles/desktop/node_modules/dsh-boot-deepseek`（junction）导入宿主半边并直接驱动：HEAD `200 video/mp4`、GET 同长、`bytes=0-99` 回 `206 …/<总长>` |
 | 无 CSP 拦截 | 全文扫 `app.asar`：所有 CSP 都在隔离上下文（沙箱文件服务、文档预览 iframe、登录小页、Electron 本地页），shell 主页面没有 CSP，同源 `<video>` 不会被拦 |
 | 换片不需要重启（回归） | 媒体验字节按 size+mtime 作缓存键；新增「换片后重读」「未变仍缓存」两条断言。起因是实测到的真实现象：重启后路由已上线、磁盘上是新片，`content-length` 却仍是换片前那份的字节数（进程内存里的旧副本） |
 

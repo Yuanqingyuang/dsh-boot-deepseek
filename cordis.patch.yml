@@ -1,4 +1,4 @@
-# Bundle patch for dsh-550c-boot.
+# Bundle patch for dsh-boot-deepseek.
 #
 # This is what makes the package a PROFILE LAYER rather than an inert
 # dependency: the row below mounts the plugin, and the package's `dsh.client`
@@ -8,5 +8,5 @@
 # market's own submission gate rejects it with "declares only dsh.client —
 # that alone is not installable". Both blocks are required.
 - insert:
-    - id: boot-550c
-      name: dsh-550c-boot
+    - id: boot-deepseek
+      name: dsh-boot-deepseek

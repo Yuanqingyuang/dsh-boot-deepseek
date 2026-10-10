@@ -37,7 +37,7 @@ body 级元素会**把整扇窗口从 macOS 可拖拽区域里减掉**：片头�
 失效。`pointer-events: none` 不豁免这件事，只有元素自己声明才行。
 
 遮罩挂载时，宿主自己往 `<head>` 塞一张
-`html[data-platform="darwin"] body>.dsh550c-host{-webkit-app-region:initial !important}`：
+`html[data-platform="darwin"] body>.dsh-deepseek-host{-webkit-app-region:initial !important}`：
 `initial` 是初始值（`none`），作用是让元素**退出** app-region 计算，而不是把整块遮罩变成拖拽把手，
 所以点击跳过照旧有效；`!important` 是必需的，官方那条选择器权重更高。
 
@@ -45,7 +45,7 @@ body 级元素会**把整扇窗口从 macOS 可拖拽区域里减掉**：片头�
 豁免而是契约 —— 全家桶会样式化它（不透明底色、`pointer-events:none`、`z-index:9999`、自己的
 `transition`），而它的 boot shield 还会 `querySelector('div[data-dsh-boot-splash]')` 找到并**复用**、
 约 1.2 秒后 `remove()`。结果是装了全家桶的人：点击跳过被静默关掉、两段式交接被中和、片头一秒出头
-被删。现在宿主带自己的 `data-dsh-550c-boot`，并用标准的 `aria-hidden="true"` 换取全家桶的同一条
+被删。现在宿主带自己的 `data-dsh-boot-deepseek`，并用标准的 `aria-hidden="true"` 换取全家桶的同一条
 拖拽豁免；几何（`z-index` / `background` / `pointer-events` / `transition`）全部**显式声明在
 document 级样式表**里并带 `!important` —— 文档树的普通声明本来就压过 shadow 里的 `:host`，把
 宿主的关键属性交给 `:host` 等于交给别人改写。
@@ -63,7 +63,7 @@ macOS 没有 `titleBarOverlay`（整个 shell 里 `titlebar-area` 零命中）�
 |---|---|---|
 | HUD 让位 | `:host([data-caption="darwin"]) #hud-top{padding-left:76px}` | 16（x）+ 52（shell 自己给红绿灯留的条宽）+ 8 呼吸位 |
 | 全屏塌陷 | `[data-fullscreen]` 时 `padding-left/right:0` | 全屏时 macOS 收红绿灯、Windows 收 overlay 按钮；preload 用 `html[data-fullscreen]` 报这件事 |
-| 窗口可拖 | document 级拖拽带 `body>.dsh550c-dragband{-webkit-app-region:drag}` | 见下 |
+| 窗口可拖 | document 级拖拽带 `body>.dsh-deepseek-dragband{-webkit-app-region:drag}` | 见下 |
 
 **拖拽带为什么在文档树里，而不是标 `#hud-top`。** 0.1.4 给 shadow root 内的 `#hud-top` 标了
 `data-window-drag` —— 看着对，实际什么也不做：官方规则是

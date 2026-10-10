@@ -193,10 +193,10 @@ async function main() {
       await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
         source: `(() => {
           const probe = { t0: Math.round(performance.now()), bootCardAdded: null, bootCardGone: null, splashAdded: null };
-          window.__dsh550cProbe = probe;
+          window.__dshDeepseekProbe = probe;
           const check = () => {
             const card = document.querySelector('[data-dsh-boot]') !== null;
-            const splash = document.querySelector('.dsh550c-host') !== null;
+            const splash = document.querySelector('.dsh-deepseek-host') !== null;
             if (probe.bootCardAdded === null && card) probe.bootCardAdded = Math.round(performance.now());
             if (probe.bootCardAdded !== null && probe.bootCardGone === null && !card) probe.bootCardGone = Math.round(performance.now());
             if (probe.splashAdded === null && splash) probe.splashAdded = Math.round(performance.now());
@@ -219,9 +219,9 @@ async function main() {
     await sleep(1500)
 
     // 2. Seed the mode and the colour scheme the plugin reads.
-    await evaluate(`window.localStorage.setItem('dsh-550c-boot:mode', ${JSON.stringify(mode)})`)
+    await evaluate(`window.localStorage.setItem('dsh-boot-deepseek:mode', ${JSON.stringify(mode)})`)
     const scheme = typeof args.scheme === 'string' ? args.scheme : 'amber'
-    await evaluate(`window.localStorage.setItem('dsh-550c-boot:scheme', ${JSON.stringify(scheme)})`)
+    await evaluate(`window.localStorage.setItem('dsh-boot-deepseek:scheme', ${JSON.stringify(scheme)})`)
 
     /**
      * Dismiss the first-run gates. A fresh profile chains several of them (beta
@@ -286,18 +286,18 @@ async function main() {
       await sleep(1200)
       settings = {
         steps,
-        rowFound: await evaluate(`document.querySelector('.dsh550c-row') !== null`),
+        rowFound: await evaluate(`document.querySelector('.dsh-deepseek-row') !== null`),
         rowTitle: await evaluate(
-          `(document.querySelector('.dsh550c-row-title') || {}).textContent || null`,
+          `(document.querySelector('.dsh-deepseek-row-title') || {}).textContent || null`,
         ),
         segments: await evaluate(
-          `Array.from(document.querySelectorAll('.dsh550c-seg button')).map((b) => b.textContent.trim())`,
+          `Array.from(document.querySelectorAll('.dsh-deepseek-seg button')).map((b) => b.textContent.trim())`,
         ),
         activeSegment: await evaluate(
-          `(document.querySelector('.dsh550c-seg button.on') || {}).textContent || null`,
+          `(document.querySelector('.dsh-deepseek-seg button.on') || {}).textContent || null`,
         ),
         previewButton: await evaluate(
-          `(document.querySelector('.dsh550c-preview') || {}).textContent || null`,
+          `(document.querySelector('.dsh-deepseek-preview') || {}).textContent || null`,
         ),
       }
     }
@@ -314,7 +314,7 @@ async function main() {
       // an idle overlay", and the finale is exactly the phase that has a video
       // element and a promise of its own to unwind.
       const before = await evaluate(`(() => {
-        const host = document.querySelector('.dsh550c-host');
+        const host = document.querySelector('.dsh-deepseek-host');
         const shadow = host === null ? null : host.shadowRoot;
         const video = shadow === null ? null : shadow.querySelector('.finale-video');
         return {
@@ -326,7 +326,7 @@ async function main() {
       })()`)
       await evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))`)
       await sleep(900)
-      const afterEsc = await evaluate(`document.querySelector('.dsh550c-host') !== null`)
+      const afterEsc = await evaluate(`document.querySelector('.dsh-deepseek-host') !== null`)
       skip = { hostBefore: before.host, stageBefore: before.stage, finalShownBefore: before.finalShown, videoBefore: before.video, hostAfterEsc: afterEsc }
     }
 
@@ -341,7 +341,7 @@ async function main() {
     if (args.timeline === true) {
       const sample = () =>
         evaluate(`(() => {
-          const host = document.querySelector('.dsh550c-host');
+          const host = document.querySelector('.dsh-deepseek-host');
           const shadow = host === null ? null : host.shadowRoot;
           if (shadow === null) return { gone: true, sawBootCard: host === null ? null : host.dataset.sawBootCard };
           const text = (sel) => { const el = shadow.querySelector(sel); return el === null ? null : el.textContent; };
@@ -408,7 +408,7 @@ async function main() {
     }
 
     const state = await evaluate(`(() => {
-      const host = document.querySelector('.dsh550c-host');
+      const host = document.querySelector('.dsh-deepseek-host');
       const shadow = host === null ? null : host.shadowRoot;
       const style = host === null ? null : getComputedStyle(host);
       const top = document.elementFromPoint(Math.round(innerWidth / 2), Math.round(innerHeight / 2));
@@ -456,7 +456,7 @@ async function main() {
         finalShown: shadow !== null && shadow.querySelector('#final.show') !== null,
         logLines: shadow === null ? 0 : shadow.querySelectorAll('#mainBody .ln').length,
         nodesOnline: shadow === null ? 0 : shadow.querySelectorAll('#nodeGrid .uav.done').length,
-        mode: window.localStorage.getItem('dsh-550c-boot:mode'),
+        mode: window.localStorage.getItem('dsh-boot-deepseek:mode'),
         // The finale video (added for the DeepSeek port): present, playing,
         // and did the decoder actually take the file?
         finaleStage: shadow !== null && shadow.querySelector('.finale') !== null,
@@ -518,7 +518,7 @@ async function main() {
       };
     })()`)
 
-    const probe = args.probe === true ? await evaluate('window.__dsh550cProbe ?? null') : null
+    const probe = args.probe === true ? await evaluate('window.__dshDeepseekProbe ?? null') : null
 
     const shot = await cdp.send('Page.captureScreenshot', { format: 'png' })
     mkdirSync(dirname(outPath), { recursive: true })

@@ -80,7 +80,7 @@ process.platform === 'win32' && primary
 
 **A. 纯客户端检查 + 引导（建议 v1）**
 
-- 客户端半边在设置行加「检查更新」按钮 → `fetch('https://api.github.com/repos/yannicksong0106/dsh-550c-boot/releases/latest')`。
+- 客户端半边在设置行加「检查更新」按钮 → `fetch('https://api.github.com/repos/Yuanqingyuang/dsh-boot-deepseek/releases/latest')`。
 - 当前版本由**宿主半边**在 `webserver/index-inject` 时用 `global` 行注入（页面不用猜、也不用打接口）。
 - 结果分支：有新版本 → 版本号 +「复制安装命令」+「打开 Release 页」（走官方 `open-in-app` 服务）+「重新检查」；
   网络失败/被墙 → 明确提示 + 给 Release 链接，不静默失败。

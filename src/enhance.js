@@ -1,5 +1,5 @@
 /**
- * dsh-550c-boot — content enhancement layer.
+ * dsh-boot-deepseek — content enhancement layer.
  *
  * The extractor ports the original animation VERBATIM; this file is where the
  * content is upgraded, deliberately kept out of the extraction so the port stays
@@ -399,7 +399,7 @@ function enhanceShow(stage, options) {
   // both it and the shell's own queries live in the DOCUMENT tree — neither can
   // see an attribute set inside this shadow root. The draggable strip is a
   // document-level band owned by client.js instead (HOST_SHEET_CSS,
-  // `body>.dsh550c-dragband`), which is in the tree the rule reaches and declares
+  // `body>.dsh-deepseek-dragband`), which is in the tree the rule reaches and declares
   // `-webkit-app-region: drag` explicitly so Windows drags too.
 
   /* ── the ticking deadline ──────────────────────────────────────────── */

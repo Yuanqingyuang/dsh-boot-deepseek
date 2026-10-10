@@ -1,5 +1,5 @@
 /**
- * dsh-550c-boot — browser half.
+ * dsh-boot-deepseek — browser half.
  *
  * Two surfaces:
  *
@@ -20,44 +20,60 @@
 
 const React = require('react')
 
-const MODE_KEY = 'dsh-550c-boot:mode'
+const MODE_KEY = 'dsh-boot-deepseek:mode'
+/** The key this plugin wrote before it was renamed; read-only fallback (see storedPreference). */
+const LEGACY_MODE_KEY = 'dsh-550c-boot:mode'
 const MODE_VALUES = ['off', 'simple', 'full']
 const DEFAULT_MODE = 'simple'
-const SCHEME_KEY = 'dsh-550c-boot:scheme'
+const SCHEME_KEY = 'dsh-boot-deepseek:scheme'
+/** See LEGACY_MODE_KEY. */
+const LEGACY_SCHEME_KEY = 'dsh-550c-boot:scheme'
 /** Amber is the original author's palette and the default: choosing it clears
  *  the data-scheme attribute entirely, so nothing is overridden. */
 const SCHEME_VALUES = ['amber', 'green', 'cyan', 'white']
 const DEFAULT_SCHEME = 'amber'
 /** Skip token: thrown through the show's awaits when the user skips. */
-const CANCELLED = Symbol('dsh-550c-cancelled')
+const CANCELLED = Symbol('dsh-boot-deepseek-cancelled')
 /** How long the whole hand-off takes: the content fade (200 ms) plus the delay
- *  and the backdrop fade (200 + 420 ms). Must match :host(.dsh550c-out). */
+ *  and the backdrop fade (200 + 420 ms). Must match :host(.dsh-deepseek-out). */
 const FADE_MS = 620
-const ROW_STYLE_ID = 'dsh-550c-boot-row-style'
+const ROW_STYLE_ID = 'dsh-boot-deepseek-row-style'
 /** Handshake with the host half's first frame (see endFirstFrame + lib/index.js). */
-const FIRST_FRAME_GLOBAL = '__dsh550cFirstFrame'
+const FIRST_FRAME_GLOBAL = '__dshDeepseekFirstFrame'
 /** The host half's injected version (see lib/index.js VERSION_GLOBAL). */
-const VERSION_GLOBAL = '__dsh550cVersion'
+const VERSION_GLOBAL = '__dshDeepseekVersion'
 /** The host half's update routes (see lib/index.js UPDATE_ROUTE / APPLY_ROUTE). */
-const UPDATE_ROUTE = '/dsh-550c-boot/update'
-const APPLY_ROUTE = '/dsh-550c-boot/update/apply'
+const UPDATE_ROUTE = '/dsh-boot-deepseek/update'
+const APPLY_ROUTE = '/dsh-boot-deepseek/update/apply'
 /** Where the row sends anyone the check cannot help. */
-const PACKAGE_URL = 'https://www.npmjs.com/package/dsh-550c-boot'
+const PACKAGE_URL = 'https://github.com/Yuanqingyuang/dsh-boot-deepseek'
 /** What to install to get a newer build; works in the in-app box and in the CLI. */
-const INSTALL_SPEC = 'dsh-550c-boot@latest'
+const INSTALL_SPEC = 'dsh-boot-deepseek@latest'
 /** The host-document sheet that makes the Desktop caption strip see-through. */
-const CAPTION_STYLE_ID = 'dsh-550c-boot-caption'
+const CAPTION_STYLE_ID = 'dsh-boot-deepseek-caption'
 /** The host-document sheet that owns the overlay's geometry, drag guard and band. */
-const HOST_SHEET_ID = 'dsh-550c-boot-host'
+const HOST_SHEET_ID = 'dsh-boot-deepseek-host'
 /** The host-document sheet that registers the wordmark's typeface (see ensureFontSheet). */
-const FONT_SHEET_ID = 'dsh-550c-boot-font'
+const FONT_SHEET_ID = 'dsh-boot-deepseek-font'
 
 /** The one live splash; the boot trigger and the preview button share it. */
 let liveOverlay = null
 
+/**
+ * Read a preference, falling back to the key this plugin used before it was
+ * renamed to dsh-boot-deepseek. Writes only ever touch the new key: a fork that
+ * changes its own name should not silently reset a choice the user already made
+ * — and the mode is exactly that kind of choice (picking 完整 is how the closing
+ * video gets seen at all).
+ */
+function storedPreference(key, legacyKey) {
+  const current = window.localStorage.getItem(key)
+  return current !== null ? current : window.localStorage.getItem(legacyKey)
+}
+
 function readMode() {
   try {
-    const raw = window.localStorage.getItem(MODE_KEY)
+    const raw = storedPreference(MODE_KEY, LEGACY_MODE_KEY)
     return MODE_VALUES.indexOf(raw) >= 0 ? raw : DEFAULT_MODE
   } catch (error) {
     return DEFAULT_MODE
@@ -74,7 +90,7 @@ function writeMode(mode) {
 
 function readScheme() {
   try {
-    const raw = window.localStorage.getItem(SCHEME_KEY)
+    const raw = storedPreference(SCHEME_KEY, LEGACY_SCHEME_KEY)
     return SCHEME_VALUES.indexOf(raw) >= 0 ? raw : DEFAULT_SCHEME
   } catch (error) {
     return DEFAULT_SCHEME
@@ -99,36 +115,36 @@ const HOST_CSS = `
    fade into the splash's own background, which the host now paints itself — and
    only then does that clean backdrop fade away to reveal the app. The backdrop
    is read from the animation's own --bg, so both phases agree on the colour. */
-:host(.dsh550c-out){opacity:0;transition:opacity 420ms cubic-bezier(.4,0,.2,1) 200ms}
-:host(.dsh550c-out) .dsh550c-stage{opacity:0;transition:opacity 200ms ease-out}
+:host(.dsh-deepseek-out){opacity:0;transition:opacity 420ms cubic-bezier(.4,0,.2,1) 200ms}
+:host(.dsh-deepseek-out) .dsh-deepseek-stage{opacity:0;transition:opacity 200ms ease-out}
 /* Height only — deliberately NOT position:fixed. A fixed stage would create a
    stacking context and trap #boot's z-index 2000 inside it, which lets the
    ported vignette (z-index 899) and scanlines paint OVER the logo. In the
    original page #boot was a direct child of body and nothing wrapped it. */
-.dsh550c-stage{height:100%}
+.dsh-deepseek-stage{height:100%}
 `
 
 /** The General-settings row sheet; DSH tokens so it matches either theme. */
 const ROW_CSS = `
-.dsh550c-row{display:flex;align-items:center;gap:16px;padding:10px 0;flex-wrap:wrap}
-.dsh550c-row-text{flex:1;min-width:220px}
-.dsh550c-row-title{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-primary,#191919)}
-.dsh550c-row-desc{margin-top:2px;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-secondary,#666)}
-.dsh550c-row-ctrl{display:flex;align-items:center;gap:8px}
-.dsh550c-seg{display:inline-flex;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.35));border-radius:8px;overflow:hidden}
-.dsh550c-seg button{border:0;background:transparent;color:var(--dsw-alias-label-secondary,#666);font-family:inherit;font-size:12.5px;line-height:1.4;padding:5px 14px;cursor:pointer}
-.dsh550c-seg button+button{border-left:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.35))}
-.dsh550c-seg button:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.14))}
-.dsh550c-seg button.on{background:var(--dsw-alias-brand-primary,#4d6bfe);color:#fff}
-.dsh550c-preview{border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.35));background:transparent;color:var(--dsw-alias-label-primary,#191919);font-family:inherit;font-size:12.5px;line-height:1.4;padding:5px 14px;border-radius:8px;cursor:pointer}
-.dsh550c-preview:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.14))}
-.dsh550c-preview[disabled]{opacity:.55;cursor:default}
-.dsh550c-note{margin-top:6px;font-size:12px;line-height:1.6;color:var(--dsw-alias-label-secondary,#666)}
-.dsh550c-note b{color:var(--dsw-alias-label-primary,#191919);font-weight:600}
-.dsh550c-note.up{color:var(--dsw-alias-brand-primary,#4d6bfe)}
-.dsh550c-note.bad{color:var(--dsw-alias-label-error,#d4380d)}
-.dsh550c-link{border:0;background:transparent;padding:0;margin:0 0 0 8px;font-family:inherit;font-size:12px;color:var(--dsw-alias-brand-primary,#4d6bfe);cursor:pointer;text-decoration:underline}
-.dsh550c-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.14));border-radius:6px;padding:2px 6px}
+.dsh-deepseek-row{display:flex;align-items:center;gap:16px;padding:10px 0;flex-wrap:wrap}
+.dsh-deepseek-row-text{flex:1;min-width:220px}
+.dsh-deepseek-row-title{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-primary,#191919)}
+.dsh-deepseek-row-desc{margin-top:2px;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-secondary,#666)}
+.dsh-deepseek-row-ctrl{display:flex;align-items:center;gap:8px}
+.dsh-deepseek-seg{display:inline-flex;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.35));border-radius:8px;overflow:hidden}
+.dsh-deepseek-seg button{border:0;background:transparent;color:var(--dsw-alias-label-secondary,#666);font-family:inherit;font-size:12.5px;line-height:1.4;padding:5px 14px;cursor:pointer}
+.dsh-deepseek-seg button+button{border-left:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.35))}
+.dsh-deepseek-seg button:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.14))}
+.dsh-deepseek-seg button.on{background:var(--dsw-alias-brand-primary,#4d6bfe);color:#fff}
+.dsh-deepseek-preview{border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.35));background:transparent;color:var(--dsw-alias-label-primary,#191919);font-family:inherit;font-size:12.5px;line-height:1.4;padding:5px 14px;border-radius:8px;cursor:pointer}
+.dsh-deepseek-preview:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.14))}
+.dsh-deepseek-preview[disabled]{opacity:.55;cursor:default}
+.dsh-deepseek-note{margin-top:6px;font-size:12px;line-height:1.6;color:var(--dsw-alias-label-secondary,#666)}
+.dsh-deepseek-note b{color:var(--dsw-alias-label-primary,#191919);font-weight:600}
+.dsh-deepseek-note.up{color:var(--dsw-alias-brand-primary,#4d6bfe)}
+.dsh-deepseek-note.bad{color:var(--dsw-alias-label-error,#d4380d)}
+.dsh-deepseek-link{border:0;background:transparent;padding:0;margin:0 0 0 8px;font-family:inherit;font-size:12px;color:var(--dsw-alias-brand-primary,#4d6bfe);cursor:pointer;text-decoration:underline}
+.dsh-deepseek-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.14));border-radius:6px;padding:2px 6px}
 `
 
 function ensureRowStyle() {
@@ -154,7 +170,7 @@ function ensureRowStyle() {
  *              click-to-skip (`pointer-events:none`), dropped the overlay under
  *              the app's own layers (9999), repainted it and replaced the
  *              hand-off transition. The marker is now this plugin's own
- *              (`data-dsh-550c-boot`, see mountOverlay) and these declarations
+ *              (`data-dsh-boot-deepseek`, see mountOverlay) and these declarations
  *              are `!important`, so no third-party sheet can take the overlay
  *              over again.
  *
@@ -177,9 +193,9 @@ function ensureRowStyle() {
  * gets the same treatment without this plugin borrowing a family-private name.
  */
 const HOST_SHEET_CSS = `
-body>.dsh550c-host{position:fixed;inset:0;display:block;box-sizing:border-box;z-index:2147483000 !important;background:var(--bg,#050403);pointer-events:auto !important}
-body>.dsh550c-host.dsh550c-out{opacity:0;transition:opacity 420ms cubic-bezier(.4,0,.2,1) 200ms !important}
-html[data-platform="darwin"] body>.dsh550c-host{-webkit-app-region:initial !important}
+body>.dsh-deepseek-host{position:fixed;inset:0;display:block;box-sizing:border-box;z-index:2147483000 !important;background:var(--bg,#050403);pointer-events:auto !important}
+body>.dsh-deepseek-host.dsh-deepseek-out{opacity:0;transition:opacity 420ms cubic-bezier(.4,0,.2,1) 200ms !important}
+html[data-platform="darwin"] body>.dsh-deepseek-host{-webkit-app-region:initial !important}
 /* A real drag region for the window's top strip while the splash plays. The HUD
    strip lives inside the shadow root, where the official rule
    html[data-platform=darwin] [data-window-drag]{-webkit-app-region:drag} can
@@ -188,7 +204,7 @@ html[data-platform="darwin"] body>.dsh550c-host{-webkit-app-region:initial !impo
    declared explicitly so Windows (where that rule does not exist at all) drags
    too. It sits above the overlay, which is why clicks inside the top 40px go to
    the window rather than to skip-the-splash: press Esc, or click below the band. */
-body>.dsh550c-dragband{position:fixed;top:0;left:0;right:0;height:40px;z-index:2147483001;-webkit-app-region:drag}
+body>.dsh-deepseek-dragband{position:fixed;top:0;left:0;right:0;height:40px;z-index:2147483001;-webkit-app-region:drag}
 `
 
 function ensureHostSheet() {
@@ -203,7 +219,7 @@ function ensureHostSheet() {
  * Register the splash's typeface — at DOCUMENT level, not in the shadow sheet.
  *
  * `FONT_FACE_CSS` (generated by scripts/extract.mjs from assets/orbitron-latin.woff2)
- * carries the wordmark's Orbitron as a data: URL. It cannot live in `CSS_550C`:
+ * carries the wordmark's Orbitron as a data: URL. It cannot live in `SPLASH_CSS`:
  * measured on the built bundle, Chromium parsed the shadow stylesheet's
  * @font-face into a CSSFontFaceRule but registered no face in `document.fonts`,
  * so the family fell back to the system sans and the inlined font did nothing.
@@ -241,7 +257,7 @@ function endFirstFrame() {
   try {
     handle.end()
   } catch (error) {
-    console.error('[dsh-550c-boot] first frame refused to end', error)
+    console.error('[dsh-boot-deepseek] first frame refused to end', error)
   }
 }
 
@@ -376,7 +392,7 @@ function mountOverlay(force) {
   }
 
   const host = document.createElement('div')
-  host.className = 'dsh550c-host'
+  host.className = 'dsh-deepseek-host'
   // This plugin's OWN marker. It used to borrow the dsh-web family's
   // `data-dsh-boot-splash`, which turned out to be a trap: that name is not an
   // exemption but a contract — the family styles it (opaque background,
@@ -385,7 +401,7 @@ function mountOverlay(force) {
   // meant the splash lost click-to-skip, its fade and its lifetime on every
   // install that ships the family bundle. `aria-hidden="true"` is the standard
   // attribute that earns the same drag exemption without borrowing a private name.
-  host.dataset.dsh550cBoot = ''
+  host.dataset.dshDeepseekBoot = ''
   host.setAttribute('aria-hidden', 'true')
   ensureHostSheet()
   // The typeface has to be registered in the document, not in the shadow sheet
@@ -395,7 +411,7 @@ function mountOverlay(force) {
   // plays (the HUD strip is inside the shadow root, where the official rule cannot
   // reach — see HOST_SHEET_CSS).
   const dragBand = document.createElement('div')
-  dragBand.className = 'dsh550c-dragband'
+  dragBand.className = 'dsh-deepseek-dragband'
   dragBand.setAttribute('data-window-drag', '')
   // The scheme is applied as data on the host, which is what the stylesheet's
   // :host([data-scheme=…]) blocks key on. Amber sets nothing on purpose.
@@ -438,7 +454,7 @@ function mountOverlay(force) {
       window.clearTimeout(record.watchdog)
       record.watchdog = null
     }
-    host.classList.add('dsh550c-out')
+    host.classList.add('dsh-deepseek-out')
     record.fadeTimer = window.setTimeout(dispose, FADE_MS + 40)
   }
   record.dispose = dispose
@@ -448,18 +464,18 @@ function mountOverlay(force) {
   // install: the splash can never outlive its own animation and lock the user
   // out of Settings — which is where the switch that disables it lives.
   record.watchdog = window.setTimeout(() => {
-    console.error('[dsh-550c-boot] watchdog fired; dismissing the splash')
+    console.error('[dsh-boot-deepseek] watchdog fired; dismissing the splash')
     finish()
   }, mode === 'full' ? 30000 : 12000)
 
   try {
     const shadow = host.attachShadow({ mode: 'open' })
     const style = document.createElement('style')
-    style.textContent = HOST_CSS + CSS_550C
+    style.textContent = HOST_CSS + SPLASH_CSS
     shadow.appendChild(style)
 
     const stage = document.createElement('div')
-    stage.className = 'dsh550c-stage'
+    stage.className = 'dsh-deepseek-stage'
     stage.innerHTML = mode === 'full' ? BOOT_MARKUP + APP_MARKUP : BOOT_MARKUP
     shadow.appendChild(stage)
 
@@ -480,7 +496,7 @@ function mountOverlay(force) {
     // half's first frame and this shadow root swap inside one paint.
     endFirstFrame()
   } catch (error) {
-    console.error('[dsh-550c-boot] show failed to start', error)
+    console.error('[dsh-boot-deepseek] show failed to start', error)
     finish()
   }
 
@@ -509,23 +525,23 @@ function SettingsRow() {
 
   return React.createElement(
     'div',
-    { className: 'dsh550c-row' },
+    { className: 'dsh-deepseek-row' },
     React.createElement(
       'div',
-      { className: 'dsh550c-row-text' },
-      React.createElement('div', { className: 'dsh550c-row-title' }, 'DeepSeek 开机动画'),
+      { className: 'dsh-deepseek-row-text' },
+      React.createElement('div', { className: 'dsh-deepseek-row-title' }, 'DeepSeek 开机动画'),
       React.createElement(
         'div',
-        { className: 'dsh550c-row-desc' },
+        { className: 'dsh-deepseek-row-desc' },
         '启动时播放 DeepSeek 片头；完整档走完覆写流程后播放赛博片头，点击或 Esc 可跳过。',
       ),
     ),
     React.createElement(
       'div',
-      { className: 'dsh550c-row-ctrl' },
+      { className: 'dsh-deepseek-row-ctrl' },
       React.createElement(
         'div',
-        { className: 'dsh550c-seg' },
+        { className: 'dsh-deepseek-seg' },
         options.map((option) =>
           React.createElement(
             'button',
@@ -541,7 +557,7 @@ function SettingsRow() {
       ),
       React.createElement(
         'button',
-        { type: 'button', className: 'dsh550c-preview', onClick: () => mountOverlay(true) },
+        { type: 'button', className: 'dsh-deepseek-preview', onClick: () => mountOverlay(true) },
         '预览',
       ),
     ),
@@ -554,7 +570,7 @@ function SettingsRow() {
  *
  * DSH has no plugin updater of its own (the inventory surface is read-only), so
  * this is the one place a user can ask. Both calls go to the HOST half's routes
- * (`GET /dsh-550c-boot/update`, `POST /dsh-550c-boot/update/apply`), not to the
+ * (`GET /dsh-boot-deepseek/update`, `POST /dsh-boot-deepseek/update/apply`), not to the
  * registry: the served document's CSP is restrictive and the host process already
  * owns outbound network access, so same-origin calls keep the client free of CORS
  * and CSP questions. The check reads npm (the host tries the npmmirror mirror
@@ -635,33 +651,33 @@ function VersionRow() {
   let note = null
 
   if (state.status === 'checking') {
-    note = React.createElement('div', { className: 'dsh550c-note' }, '检查中…')
+    note = React.createElement('div', { className: 'dsh-deepseek-note' }, '检查中…')
   } else if (state.status === 'failed') {
     note = React.createElement(
       'div',
-      { className: 'dsh550c-note bad' },
+      { className: 'dsh-deepseek-note bad' },
       /404/.test(state.error) ? '宿主半边是旧版本，重启客户端后可用。' : '检查失败：' + state.error,
-      React.createElement('button', { type: 'button', className: 'dsh550c-link', onClick: openPackagePage }, '打开 npm 页面'),
+      React.createElement('button', { type: 'button', className: 'dsh-deepseek-link', onClick: openPackagePage }, '打开仓库页面'),
     )
   } else if (outdated && applying.status === 'running') {
-    note = React.createElement('div', { className: 'dsh550c-note up' }, '更新中…')
+    note = React.createElement('div', { className: 'dsh-deepseek-note up' }, '更新中…')
   } else if (outdated && applying.status === 'done') {
     note = React.createElement(
       'div',
-      { className: 'dsh550c-note up' },
+      { className: 'dsh-deepseek-note up' },
       '已更新到 v' + String(applying.result?.version ?? payload.latest) + '，重启客户端生效。',
     )
   } else if (outdated && applying.status === 'failed') {
     note = React.createElement(
       'div',
-      { className: 'dsh550c-note bad' },
+      { className: 'dsh-deepseek-note bad' },
       String(applying.result?.hint ?? '更新失败。'),
-      React.createElement('button', { type: 'button', className: 'dsh550c-link', onClick: () => copy(INSTALL_SPEC) }, copied ? '已复制' : '复制包名'),
+      React.createElement('button', { type: 'button', className: 'dsh-deepseek-link', onClick: () => copy(INSTALL_SPEC) }, copied ? '已复制' : '复制包名'),
     )
   } else if (outdated) {
     note = React.createElement(
       'div',
-      { className: 'dsh550c-note up' },
+      { className: 'dsh-deepseek-note up' },
       '有新版本 v' + String(payload.latest) + '。',
       canApply
         ? '点「立即更新」，然后重启客户端。'
@@ -669,49 +685,49 @@ function VersionRow() {
             'span',
             null,
             '在 设置 → 插件 里装 ',
-            React.createElement('span', { className: 'dsh550c-code' }, INSTALL_SPEC),
+            React.createElement('span', { className: 'dsh-deepseek-code' }, INSTALL_SPEC),
             '，然后重启。',
           ),
       canApply
         ? null
-        : React.createElement('button', { type: 'button', className: 'dsh550c-link', onClick: () => copy(INSTALL_SPEC) }, copied ? '已复制' : '复制包名'),
+        : React.createElement('button', { type: 'button', className: 'dsh-deepseek-link', onClick: () => copy(INSTALL_SPEC) }, copied ? '已复制' : '复制包名'),
     )
   } else if (state.status === 'done') {
     note = React.createElement(
       'div',
-      { className: 'dsh550c-note' },
+      { className: 'dsh-deepseek-note' },
       payload !== null && payload.state === 'unknown'
         ? '查不到最新版本。'
         : '已是最新 v' + String(payload?.current ?? current ?? '?') + '。',
-      React.createElement('button', { type: 'button', className: 'dsh550c-link', onClick: openPackagePage }, '打开 npm 页面'),
+      React.createElement('button', { type: 'button', className: 'dsh-deepseek-link', onClick: openPackagePage }, '打开仓库页面'),
     )
   }
 
   return React.createElement(
     'div',
-    { className: 'dsh550c-row' },
+    { className: 'dsh-deepseek-row' },
     React.createElement(
       'div',
-      { className: 'dsh550c-row-text' },
-      React.createElement('div', { className: 'dsh550c-row-title' }, '版本与更新'),
+      { className: 'dsh-deepseek-row-text' },
+      React.createElement('div', { className: 'dsh-deepseek-row-title' }, '版本与更新'),
       React.createElement(
         'div',
-        { className: 'dsh550c-row-desc' },
+        { className: 'dsh-deepseek-row-desc' },
         current === null ? '从 npm 查询最新版本。' : '当前 v' + current + '，从 npm 查询最新版本。',
       ),
       hostStale && state.status === 'idle'
-        ? React.createElement('div', { className: 'dsh550c-note bad' }, '宿主半边是旧版本，重启客户端后可用。')
+        ? React.createElement('div', { className: 'dsh-deepseek-note bad' }, '宿主半边是旧版本，重启客户端后可用。')
         : null,
       note,
     ),
     React.createElement(
       'div',
-      { className: 'dsh550c-row-ctrl' },
+      { className: 'dsh-deepseek-row-ctrl' },
       React.createElement(
         'button',
         {
           type: 'button',
-          className: 'dsh550c-preview',
+          className: 'dsh-deepseek-preview',
           disabled: state.status === 'checking',
           onClick: check,
         },
@@ -722,7 +738,7 @@ function VersionRow() {
             'button',
             {
               type: 'button',
-              className: 'dsh550c-preview',
+              className: 'dsh-deepseek-preview',
               disabled: applying.status === 'running',
               onClick: apply,
             },
@@ -758,23 +774,23 @@ function SchemeRow() {
 
   return React.createElement(
     'div',
-    { className: 'dsh550c-row' },
+    { className: 'dsh-deepseek-row' },
     React.createElement(
       'div',
-      { className: 'dsh550c-row-text' },
-      React.createElement('div', { className: 'dsh550c-row-title' }, '开机动画配色'),
+      { className: 'dsh-deepseek-row-text' },
+      React.createElement('div', { className: 'dsh-deepseek-row-title' }, '开机动画配色'),
       React.createElement(
         'div',
-        { className: 'dsh550c-row-desc' },
+        { className: 'dsh-deepseek-row-desc' },
         '琥珀是原作的配色，也是默认值。',
       ),
     ),
     React.createElement(
       'div',
-      { className: 'dsh550c-row-ctrl' },
+      { className: 'dsh-deepseek-row-ctrl' },
       React.createElement(
         'div',
-        { className: 'dsh550c-seg' },
+        { className: 'dsh-deepseek-seg' },
         options.map((option) =>
           React.createElement(
             'button',
@@ -802,13 +818,13 @@ function apply(ctx) {
   // The settings rows are ordinary slot contributions: they belong to a panel
   // and should live and die with it.
   ctx.slots.inject('settings.general.item', () =>
-    ctx.slots.register({ name: 'settings.general.item', id: 'boot-550c', order: 26 }, SettingsRow),
+    ctx.slots.register({ name: 'settings.general.item', id: 'boot-deepseek', order: 26 }, SettingsRow),
   )
   ctx.slots.inject('settings.general.item', () =>
-    ctx.slots.register({ name: 'settings.general.item', id: 'boot-550c-scheme', order: 27 }, SchemeRow),
+    ctx.slots.register({ name: 'settings.general.item', id: 'boot-deepseek-scheme', order: 27 }, SchemeRow),
   )
   ctx.slots.inject('settings.general.item', () =>
-    ctx.slots.register({ name: 'settings.general.item', id: 'boot-550c-update', order: 28 }, VersionRow),
+    ctx.slots.register({ name: 'settings.general.item', id: 'boot-deepseek-update', order: 28 }, VersionRow),
   )
 
   // The splash is deliberately NOT a slot contribution — mountOverlay() explains
@@ -818,7 +834,7 @@ function apply(ctx) {
       if (bootSplash !== null) bootSplash.dispose()
       if (liveOverlay !== null) liveOverlay.dispose()
     },
-    'dsh-550c-boot: splash teardown',
+    'dsh-boot-deepseek: splash teardown',
   )
 }
 
@@ -835,6 +851,6 @@ function apply(ctx) {
  */
 const bootSplash = mountOverlay(false)
 
-exports.name = 'boot-550c'
+exports.name = 'boot-deepseek'
 exports.inject = ['slots']
 exports.apply = apply

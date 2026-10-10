@@ -9,7 +9,7 @@
  * is visible or covered.
  *
  * Run scripts/harness/build.mjs first (npm run verify does both). The browser is
- * Edge, Chrome or Chromium — whichever is found, or DSH_550C_BROWSER. When none is
+ * Edge, Chrome or Chromium — whichever is found, or DSH_DEEPSEEK_BROWSER. When none is
  * installed the suite reports that and exits 0, so a host-only CI run is not a
  * failure; scripts/test-host.mjs is the part that always has to pass.
  */
@@ -46,7 +46,7 @@ process.on('SIGINT', () => {
 })
 
 const BROWSER = [
-  process.env.DSH_550C_BROWSER,
+  process.env.DSH_DEEPSEEK_BROWSER,
   `${process.env['ProgramFiles(x86)']}\\Microsoft\\Edge\\Application\\msedge.exe`,
   `${process.env.ProgramFiles}\\Microsoft\\Edge\\Application\\msedge.exe`,
   `${process.env.ProgramFiles}\\Google\\Chrome\\Application\\chrome.exe`,
@@ -58,7 +58,7 @@ const BROWSER = [
 ].find((candidate) => candidate !== undefined && existsSync(candidate))
 if (BROWSER === undefined) {
   process.stdout.write('harness: no Edge/Chrome/Chromium found; skipping the browser suite.\n')
-  process.stdout.write('harness: set DSH_550C_BROWSER to a browser binary to run it.\n')
+  process.stdout.write('harness: set DSH_DEEPSEEK_BROWSER to a browser binary to run it.\n')
   process.exit(0)
 }
 
@@ -255,20 +255,20 @@ const EXPECT = {
   // The settings rows, rendered for real by scripts/harness/rows.js: these are the
   // exact strings a user reads, so a wording change has to be deliberate.
   'settings rows · rendered text': {
-    'rows.ids': 'boot-550c,boot-550c-scheme,boot-550c-update',
+    'rows.ids': 'boot-deepseek,boot-deepseek-scheme,boot-deepseek-update',
     'rows.mode.title': 'DeepSeek 开机动画',
     'rows.mode.desc': '启动时播放 DeepSeek 片头；完整档走完覆写流程后播放赛博片头，点击或 Esc 可跳过。',
     'rows.mode.buttons': '关闭,简易,完整,预览',
     'rows.scheme.desc': '琥珀是原作的配色，也是默认值。',
     'rows.versionIdle.desc': /^当前 v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?，从 npm 查询最新版本。$/,
     'rows.versionIdle.buttons': '检查更新',
-    'rows.versionCurrent.note': /^已是最新 v\d+\.\d+\.\d+。打开 npm 页面$/,
-    'rows.versionDesktop.note': '有新版本 v9.9.9。在 设置 → 插件 里装 dsh-550c-boot@latest，然后重启。复制包名',
+    'rows.versionCurrent.note': /^已是最新 v\d+\.\d+\.\d+。打开仓库页面$/,
+    'rows.versionDesktop.note': '有新版本 v9.9.9。在 设置 → 插件 里装 dsh-boot-deepseek@latest，然后重启。复制包名',
     'rows.versionDesktop.canUpdate': false,
     'rows.versionWeb.note': '有新版本 v9.9.9。点「立即更新」，然后重启客户端。',
     'rows.versionWeb.canUpdate': true,
     'rows.versionWeb.buttons': '检查更新,立即更新',
-    'rows.versionMissing.note': '宿主半边是旧版本，重启客户端后可用。打开 npm 页面',
+    'rows.versionMissing.note': '宿主半边是旧版本，重启客户端后可用。打开仓库页面',
   },
 }
 

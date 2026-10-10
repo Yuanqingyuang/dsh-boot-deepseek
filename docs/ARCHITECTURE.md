@@ -80,8 +80,8 @@ script），桌面载体则在 settle `__DSH_BOOT_READY__` 之前**在页面里�
 
 | 约定 | 作用 |
 |---|---|
-| `dsh-550c-boot:mode` | 注入脚本自己读这个键：**关闭**档直接不作画，一张黑屏都不会出现 |
-| `window.__dsh550cFirstFrame.end()` | 遮罩挂载后调用它退役首帧（同一任务、同一帧，无缝） |
+| `dsh-boot-deepseek:mode` | 注入脚本自己读这个键：**关闭**档直接不作画，一张黑屏都不会出现 |
+| `window.__dshDeepseekFirstFrame.end()` | 遮罩挂载后调用它退役首帧（同一任务、同一帧，无缝） |
 
 首帧也不会赖着不走：注入脚本每 250ms 看一眼那张卡片——卡片消失（应用挂载）或卡片丢掉 spinner
 （shell 自己的失败态）就自己撤；再加 12s 绝对上限。客户端挂了、别的插件把 shell 弄挂了，页面都还是
@@ -96,8 +96,8 @@ script），桌面载体则在 settle `__DSH_BOOT_READY__` 之前**在页面里�
 
 | 段 | 时长 | 做什么 |
 |---|---|---|
-| 内容 | 200ms | `.dsh550c-stage` 淡到透明——logo 与面板先化进片头的底色 |
-| 黑底 | 延迟 200ms，再 420ms | `:host(.dsh550c-out)` 淡出，露出下面的对话页 |
+| 内容 | 200ms | `.dsh-deepseek-stage` 淡到透明——logo 与面板先化进片头的底色 |
+| 黑底 | 延迟 200ms，再 420ms | `:host(.dsh-deepseek-out)` 淡出，露出下面的对话页 |
 
 遮罩自己用 `background:var(--bg)` 画那层黑底（`--bg` 就是动画自己的底色变量，两段颜色因此天然一致），
 总时长 620ms 与 `FADE_MS` 对齐——它同时是移除元素的定时器。
